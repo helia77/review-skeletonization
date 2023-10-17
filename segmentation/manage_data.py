@@ -56,5 +56,12 @@ def save_slices(volume, folder_path, number):
 # loads nrrd file (segmentations from Slicer 3D), and converts it to numpy file
 def nrrd_to_numpy(nrrd_path):
     file = nrrd.read(nrrd_path)[0]
-    return file * 255
+    return file.astype(np.uint8) * 255
+
+def numpy_to_nrrd(numpy_path, filename):
+    arr = np.load(numpy_path)
+
+    # convertin numpy array to nrrd file
+    nrrd.write(filename, arr)
+    
     

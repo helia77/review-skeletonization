@@ -4,19 +4,18 @@ Created on Mon Oct 16 12:37:35 2023
 
 @author: helioum
 """
-import sys
-sys.path.append('..')
 from matplotlib import pyplot as plt
 import numpy as np
-import otsu
+import thresholding as th
 import manage_data as md
 import metric as mt
 import time
+import os
 #import cv2
 
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
-path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/data/data'
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/KESM'
 crop_size = 200
 stack = True
 grayscale = True
@@ -26,24 +25,24 @@ img_list = md.load_images(path, crop_size, not stack, crop_size, grayscale)
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
-thresh_volume, best_thresh = otsu.compute_otsu(volume)
+thresh_volume, best_thresh = th.compute_otsu(volume)
 
-print('\nOtsu\'s threshold: ' + str(best_thresh) + '\n Execution time: --- %s seconds ---' % (time.time() - start))
+print('\nOtsu\'s threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
 
 #%%
 # save the slices of each volume for evaluation
 num_slices = 50
-path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/segmentation/data'
-path2 = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/segmentation/data2'
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data'
+path2 = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data2'
 
-md.save_slices(thresh_volume, path, num_slices)
-md.save_slices(volume, path2, num_slices)
+md.save_slices(thresh_volume, path2, num_slices)
+md.save_slices(volume, path, num_slices)
 
 #%%
 # load the true volume (segmented by Slicer3D)
-path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/data/Vessels_1-Segment_2-label.nrrd'
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Vessels-Segment_2-label.nrrd'
 vol_true = md.nrrd_to_numpy(path)                               # convert nrrd file to numpy array
-vol_true = vol_true[:, 0:200, 0:200].astype(np.uint8)           # crop so that it corresponds to the original volume
+vol_true = vol_true[:, 0:200, 0:200]                            # crop so that it corresponds to the original volume
 vol_true = np.where(vol_true == 255, 0, 255)                    # swap 0's with 1's
 
 #%%
@@ -51,7 +50,7 @@ vol_true = np.where(vol_true == 255, 0, 255)                    # swap 0's with 
 thresh_img = []
 mean = 0
 for i, img in enumerate(img_list):
-    thresh, test = otsu.compute_otsu(img)
+    thresh, test = th.compute_otsu(img)
     mean += test
     if i == 0:
         first_thresh = test
@@ -61,8 +60,8 @@ thresh_images = np.stack(thresh_img, axis=0)
 mean /= len(img_list)
 #%%
 # testing for adaptive mean thresholding
-adaptive_mean = otsu.adaptive_mean(img_list, 21, 5)
-adaptive_gaussian = otsu.adaptive_gaussian(img_list, 21, 5)
+adaptive_mean = th.adaptive_mean(img_list, 21, 5)
+adaptive_gaussian = th.adaptive_gaussian(img_list, 21, 5)
 #%%
 # calculate Jaccard index
 # thresh = np.zeros(volume.shape, dtype=np.uint8)
@@ -77,21 +76,26 @@ dice_img = mt.dice_coeff(vol_true, thresh_images)
 dice_mean = mt.dice_coeff(vol_true, adaptive_mean)
 dice_gaussian = mt.dice_coeff(vol_true, adaptive_gaussian)
 #%%
+folder_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/figures/'
+os.makedirs(folder_path)
 # plot the images
-fig, ax = plt.subplots(1,3)
-ax[0].imshow(volume[0, :, :], cmap='gray')
-ax[0].set_title('Original volume')
-ax[0].axis('off')
-ax[1].imshow(thresh_volume[0, :, :], cmap='gray')
-ax[1].set_title('Otsu\'s volume')
-#ax[1].text(10, 10, jaccard_vol, color='black', fontsize=12, fontweight='bold')
-ax[1].axis('off')
-ax[2].imshow(thresh_images[0, :, :], cmap='gray')
-ax[2].set_title('Otsu\'s images')
-ax[2].axis('off')
-
-plt.tight_layout()
-plt.show()
+for i in range(volume.shape[0]):
+    fig, ax = plt.subplots(1,3)
+    
+    ax[0].imshow(volume[i, :, :], cmap='gray')
+    ax[0].set_title('Original volume')
+    ax[0].axis('off')
+    
+    ax[1].imshow(vol_true[i, :, :], cmap='gray')
+    ax[1].set_title('Ground Truth')
+    ax[1].axis('off')
+    
+    ax[2].imshow(thresh_images[i, :, :], cmap='gray')
+    ax[2].set_title('Otsu\'s images')
+    ax[2].axis('off')
+    
+    plt.tight_layout()
+    plt.savefig(folder_path + 'plot' + str(i) + '.png')
 
 #%%
 # show histogram of a slice
@@ -100,3 +104,9 @@ plt.axvline(x=best_thresh, color='r', linestyle='dashed', linewidth=2)
 plt.axvline(x=mean, color='g', linestyle='dashed', linewidth=2)
 plt.title('Original Data Histogram')
 plt.show()
+#%%
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data1'
+path2 = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data2'
+
+md.save_slices(thresh_images, path, num_slices)
+md.save_slices(vol_true, path2, num_slices)
