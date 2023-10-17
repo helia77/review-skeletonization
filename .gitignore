@@ -2,3 +2,6 @@
 *.npy
 *.jpg
 *.pyc
+*.nrrd
+*.pptx
+*.png

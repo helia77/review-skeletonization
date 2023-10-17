@@ -11,7 +11,7 @@ import os
 import shutil
 import numpy as np
 import cv2
-
+import nrrd
 #%%
 
 # given the files path, it loads them all into one numpy array
@@ -39,7 +39,6 @@ def load_images(file_path, num_images, stack=False, crop_size=0, grayscale=False
     else:
         return images
 
-
 #%%
 
 # given the volume, saves all the slices as images in a created folder
@@ -52,3 +51,10 @@ def save_slices(volume, folder_path, number):
         cv2.imwrite(os.path.join(folder_path, 'img' + str(i) + '.jpg'), volume[i])
         if i > number:
             break
+
+#%%
+# loads nrrd file (segmentations from Slicer 3D), and converts it to numpy file
+def nrrd_to_numpy(nrrd_path):
+    file = nrrd.read(nrrd_path)[0]
+    return file * 255
+    
