@@ -8,7 +8,7 @@ Applies Otsu's method.
 In this code, image format as (z, y, x, RGB) has been used - if RGB values exist
 """
 import numpy as np
-
+import cv2
 #%%
 # Based on the code from Wikipedia
 # returns a thresholded volume using Otsu's thresholding method
@@ -53,4 +53,20 @@ def compute_otsu(volume):
     return thresh_volume, best_threshold
     
 
+def adaptive_mean(img_list, w_size, const):
+    thresh_img = []
+    for img in img_list:
+        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, 
+                                          cv2.THRESH_BINARY, w_size, const)
+        thresh_img.append(thresh)
 
+    return np.stack(thresh_img, axis=0)
+
+def adaptive_gaussian(img_list, w_size, const):
+    thresh_img = []
+    for img in img_list:
+        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                          cv2.THRESH_BINARY, w_size, const)
+        thresh_img.append(thresh)
+
+    return np.stack(thresh_img, axis=0)
