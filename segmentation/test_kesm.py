@@ -22,6 +22,7 @@ grayscale = True
 
 volume = md.load_images(path, crop_size, stack, crop_size, grayscale)
 img_list = md.load_images(path, crop_size, not stack, crop_size, grayscale)
+
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
@@ -30,17 +31,8 @@ thresh_volume, best_thresh = th.compute_otsu(volume)
 print('\nOtsu\'s threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
 
 #%%
-# save the slices of each volume for evaluation
-num_slices = 50
-path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data'
-path2 = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data2'
-
-md.save_slices(thresh_volume, path2, num_slices)
-md.save_slices(volume, path, num_slices)
-
-#%%
 # load the true volume (segmented by Slicer3D)
-path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Vessels-Segment_2-label.nrrd'
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Segmentation.nrrd'
 vol_true = md.nrrd_to_numpy(path)                               # convert nrrd file to numpy array
 vol_true = vol_true[:, 0:200, 0:200]                            # crop so that it corresponds to the original volume
 vol_true = np.where(vol_true == 255, 0, 255)                    # swap 0's with 1's
@@ -96,7 +88,7 @@ for i in range(volume.shape[0]):
     
     plt.tight_layout()
     plt.savefig(folder_path + 'plot' + str(i) + '.png')
-
+    plt.close(fig)
 #%%
 # show histogram of a slice
 plt.hist(volume.ravel(), 256)
@@ -105,8 +97,3 @@ plt.axvline(x=mean, color='g', linestyle='dashed', linewidth=2)
 plt.title('Original Data Histogram')
 plt.show()
 #%%
-path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data1'
-path2 = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/data2'
-
-md.save_slices(thresh_images, path, num_slices)
-md.save_slices(vol_true, path2, num_slices)

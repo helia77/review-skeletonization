@@ -19,18 +19,18 @@ import nrrd
 # stack: if True, it returns all the images as multi-dimension np array - else, returns a list of images
 # crop_size: if not zero, it crops all the images into one same size, in both x and y axes
 # grayscale: if True, it loads all the images as grayscale. Else, loads as 3-channel RGB
-def load_images(file_path, num_images, stack=False, crop_size=0, grayscale=False):
+def load_images(file_path, num_images, stack=False, crop_size=0, grayscale=False, crop_location = [0,0]):
     
     # create a list of all image names
-    images_list = [f for f in os.listdir(file_path) if f.endswith('.bmp') or f.endswith('.jpg')]
+    images_list = [f for f in os.listdir(file_path) if f.endswith('.bmp') or f.endswith('.jpg') or f.endswith('.tif')]
     
     images = []
     for i in range(num_images):
         # load the image with desired type (grayscale or RGB)
         img = cv2.imread(os.path.join(file_path, images_list[i]), (cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_COLOR))
-        
+        x, y = crop_location
         if crop_size:
-            img = img[0:crop_size, 0:crop_size]
+            img = img[x:x+crop_size, y:y+crop_size]
             
         images.append(img)
 
@@ -58,8 +58,7 @@ def nrrd_to_numpy(nrrd_path):
     file = nrrd.read(nrrd_path)[0]
     return file.astype(np.uint8) * 255
 
-def numpy_to_nrrd(numpy_path, filename):
-    arr = np.load(numpy_path)
+def numpy_to_nrrd(arr, filename):
 
     # convertin numpy array to nrrd file
     nrrd.write(filename, arr)
