@@ -22,7 +22,7 @@ import nrrd
 def load_images(file_path, num_images, stack=False, crop_size=0, grayscale=False, crop_location = [0,0]):
     
     # create a list of all image names
-    images_list = [f for f in os.listdir(file_path) if f.endswith('.bmp') or f.endswith('.jpg') or f.endswith('.tif')]
+    images_list = [f for f in os.listdir(file_path) if f.endswith('.bmp') or f.endswith('.jpg') or f.endswith('.tif') or f.endswith('.png')]
     
     images = []
     for i in range(num_images):
@@ -59,7 +59,6 @@ def nrrd_to_numpy(nrrd_path):
     return file.astype(np.uint8) * 255
 
 def numpy_to_nrrd(arr, filename):
-
     # convertin numpy array to nrrd file
     nrrd.write(filename, arr)
     
