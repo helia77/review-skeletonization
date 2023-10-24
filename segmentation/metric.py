@@ -8,29 +8,35 @@ Created on Mon Oct 16 10:34:49 2023
 import numpy as np
 
 #%%
-
-def TP(vol_true, vol_pred):
-    return np.logical_and(vol_true, vol_pred).sum()
-def TN(vol_true, vol_pred):
-    return np.logical_and(vol_pred == 0, vol_true == 0).sum()
-def FP(vol_true, vol_pred):
-    return np.logical_and(vol_pred == 255, vol_true == 0).sum()
-def FN(vol_true, vol_pred):
-    return np.logical_and(vol_pred == 0, vol_true == 255).sum()
-
+class metric:
+    def __init__(self, true, predicted):
+        self.vol_true = true
+        self.vol_pred = predicted
+        
+    def TP(self):
+        return np.logical_and(self.vol_true, self.vol_pred).sum()
+    def TN(self):
+        return np.logical_and(self.vol_pred == 0, self.vol_true == 0).sum()
+    def FP(self):
+        return np.logical_and(self.vol_pred == 255, self.vol_true == 0).sum()
+    def FN(self):
+        return np.logical_and(self.vol_pred == 0, self.vol_true == 255).sum()
     
-def jaccard_idx(vol_true, vol_pred):
-    intersection = np.logical_and(vol_true, vol_pred)
-    union = np.logical_or(vol_true, vol_pred)
+        
+    def jaccard_idx(self):
+        j_index = (self.TP()) / float(self.TP() + self.FP() + self.FN())
+        return j_index * 100
     
-    #j_index = intersection.sum() / float(union.sum())
-    j_index = (TP(vol_true, vol_pred)) / (TP(vol_true, vol_pred) + FP(vol_true, vol_pred) + FN(vol_true, vol_pred))
-    return j_index * 100
-
-def dice_coeff(vol_true, vol_pred):
-    intersection = np.logical_and(vol_true, vol_pred)
-    summation = vol_true.size + vol_pred.size
+    def dice_coeff(self):
+        dice = (2*self.TP()) / float(2*self.TP() + self.FP() + self.FN())
+        return dice * 100
     
-    #dice = 2 * (intersection.sum()) / summation
-    dice = (2*TP(vol_true, vol_pred)) / (2*TP(vol_true, vol_pred) + FP(vol_true, vol_pred) + FN(vol_true, vol_pred))
-    return dice * 100
+    # aka True Positive Rate
+    def sensitivity(self):
+        recall = self.TP() / float(self.TP() + self.FN())
+        return recall * 100
+    
+    # aka True Negative Rate
+    def specificity(self):
+        ratio = self.TN() / float(self.TN() + self.FP())
+        return ratio * 100
