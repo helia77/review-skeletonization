@@ -59,15 +59,20 @@ adaptive_mean = th.adaptive_mean(img_list, 21, 5)
 adaptive_gaussian = th.adaptive_gaussian(img_list, 21, 5)
 #%%
 # calculate metrics
-jaccard_vol = mt.jaccard_idx(vol_true, thresh_volume)
-jaccard_img = mt.jaccard_idx(vol_true, thresh_images)
-jaccard_mean = mt.jaccard_idx(vol_true, adaptive_mean)
-jaccard_gaussian = mt.jaccard_idx(vol_true, adaptive_gaussian)
+volume_metrics = mt.metric(vol_true, thresh_volume)
+img_metrics = mt.metric(vol_true, thresh_images)
+mean_metrics = mt.metric(vol_true, adaptive_mean)
+gaussian_metrics = mt.metric(vol_true, adaptive_gaussian)
 
-dice_vol = mt.dice_coeff(vol_true, thresh_volume)
-dice_img = mt.dice_coeff(vol_true, thresh_images)
-dice_mean = mt.dice_coeff(vol_true, adaptive_mean)
-dice_gaussian = mt.dice_coeff(vol_true, adaptive_gaussian)
+# jaccard_vol = mt.jaccard_idx(vol_true, thresh_volume)
+# jaccard_img = mt.jaccard_idx(vol_true, thresh_images)
+# jaccard_mean = mt.jaccard_idx(vol_true, adaptive_mean)
+# jaccard_gaussian = mt.jaccard_idx(vol_true, adaptive_gaussian)
+
+# dice_vol = mt.dice_coeff(vol_true, thresh_volume)
+# dice_img = mt.dice_coeff(vol_true, thresh_images)
+# dice_mean = mt.dice_coeff(vol_true, adaptive_mean)
+# dice_gaussian = mt.dice_coeff(vol_true, adaptive_gaussian)
 
 #%%
 folder_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/figures_micro/'
