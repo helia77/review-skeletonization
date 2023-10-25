@@ -12,7 +12,7 @@ import cv2
 #%%
 # Based on the code from Wikipedia
 # returns a thresholded volume using Otsu's thresholding method
-def compute_otsu(volume):
+def compute_otsu(volume, pos_label):
     # testing all thresholds from 0 to the maximum of the image
     threshold_range = range(np.max(volume)+1)
     criteria = []
@@ -48,7 +48,7 @@ def compute_otsu(volume):
     # best threshold is the one minimizing the Otsu criteria
     best_threshold = threshold_range[np.argmin(criteria)]
     thresh_volume = np.zeros(volume.shape, dtype=np.uint8)
-    thresh_volume[volume > best_threshold] = 255
+    thresh_volume[volume > best_threshold] = pos_label
     
     return thresh_volume, best_threshold
     

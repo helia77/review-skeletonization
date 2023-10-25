@@ -13,11 +13,10 @@ import metric as mt
 import time
 import os
 import cv2
-import sklearn.metrics as sk
 
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
-path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
+path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
 crop_size = 200
 stack = True
 grayscale = True
@@ -30,22 +29,23 @@ img_list = md.load_images(path, crop_size, not stack, crop_size, grayscale, [600
 #md.numpy_to_nrrd(volume, filename)
 
 # load the true volume
-true_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
+true_path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
 vol_true = md.nrrd_to_numpy(true_path)                           # convert nrrd file to numpy array
-vol_true *= 255 
+
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
-thresh_volume, best_thresh = th.compute_otsu(volume)
+thresh_volume, best_thresh = th.compute_otsu(volume, 1)
 
-print('\nOtsu\'s threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
+print('\nOtsu\'s (volume) threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
 
 #%%
 # test otsu's method for each image slice
 thresh_img = []
 mean = 0
+start = time.time()
 for i, img in enumerate(img_list):
-    thresh, test = th.compute_otsu(img)
+    thresh, test = th.compute_otsu(img, 1)
     mean += test
     if i == 0:
         first_thresh = test
@@ -53,11 +53,13 @@ for i, img in enumerate(img_list):
 
 thresh_images = np.stack(thresh_img, axis=0)
 mean /= len(img_list)
-
+print('\nOtsu\'s (image) threshold: Done \nExecution time: --- %s seconds ---' % (time.time() - start))
 #%%
 # testing for adaptive mean thresholding
+start = time.time()
 adaptive_mean = th.adaptive_mean(img_list, 21, 5)
 adaptive_gaussian = th.adaptive_gaussian(img_list, 21, 5)
+print('\nAdaptive threshold: Done\nExecution time: --- %s seconds ---' % (time.time() - start))
 #%%
 # calculate metrics
 volume_met   = mt.metric(vol_true, thresh_volume)
@@ -66,7 +68,7 @@ mean_met     = mt.metric(vol_true, adaptive_mean)
 gaussian_met = mt.metric(vol_true, adaptive_gaussian)
 
 #%%
-folder_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/figures_micro/'
+folder_path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/segmentation/figures_micro/'
 os.makedirs(folder_path)
 # plot the images
 for i in range(volume.shape[0]):
@@ -97,23 +99,27 @@ plt.title('Original Data Histogram')
 plt.show()
 
 #%%
-
 # plot the ROC curve
 TPR = []
 FPR = []
-
+wtf = []
 # iterate through all thresholds
-for i in range(240, 20, -1):
+start = time.time()
+for i in range(50, np.min(volume), -1):
     thresholded = np.zeros(volume.shape)
-    
-    thresholded[volume >= i] = 255
-    met = mt.metric(vol_true, thresholded, 255)
-
+    thresholded = (volume >= i).astype(int)
+    met = mt.metric(vol_true, thresholded, 1)
+    if(met.sensitivity() == 1):
+        wtf.append(thresholded)
+        print(str(i) + ' ' + str(met.TP) + ' ' + str(met.FN))
     TPR.append(met.sensitivity())
     FPR.append(met.fall_out())
 
+print('\nROC curve calculation: Done\nExecution time: --- %s seconds ---' % (time.time() - start))
+
 #%%
 plt.plot(FPR, TPR, label='ROC', marker='o', color='green')
+plt.plot([0, 1], [0, 1], '--', color='gray', label='Random Guess')
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.legend()
