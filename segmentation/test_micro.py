@@ -16,7 +16,7 @@ import cv2
 
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
-path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
 crop_size = 200
 stack = True
 grayscale = True
@@ -29,7 +29,7 @@ img_list = md.load_images(path, crop_size, not stack, crop_size, grayscale, [600
 #md.numpy_to_nrrd(volume, filename)
 
 # load the true volume
-true_path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
+true_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
 vol_true = md.nrrd_to_numpy(true_path)                           # convert nrrd file to numpy array
 
 #%%
@@ -68,7 +68,7 @@ mean_met     = mt.metric(vol_true, adaptive_mean)
 gaussian_met = mt.metric(vol_true, adaptive_gaussian)
 
 #%%
-folder_path = 'C:/Users/helif/Documents/GitHub/review-paper-skeletonization/segmentation/figures_micro/'
+folder_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/figures_micro/'
 os.makedirs(folder_path)
 # plot the images
 for i in range(volume.shape[0]):
