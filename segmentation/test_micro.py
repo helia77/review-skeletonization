@@ -92,10 +92,15 @@ for i in range(volume.shape[0]):
 
 #%%
 # show histogram of a slice
-plt.hist(volume.ravel(), 256)
+plt.hist(volume[10, :, :].ravel(), 256)
 plt.axvline(x=best_thresh, color='r', linestyle='dashed', linewidth=2)
 plt.axvline(x=mean, color='g', linestyle='dashed', linewidth=2)
-plt.title('Original Data Histogram')
+plt.title('Image Histogram')
+plt.xlabel('Intensity')
+plt.ylabel('Number of Pixels')
+ax = plt.gca()
+ax.set_xlim([0,255])
+
 plt.show()
 
 #%%

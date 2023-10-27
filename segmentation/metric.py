@@ -9,20 +9,19 @@ import numpy as np
 
 #%%
 class metric:
-    def __init__(self, true, predicted, pos_label=1):
+    def __init__(self, true, predicted):
         self.vol_true = true
         self.vol_pred = predicted
-        self.pos_label = pos_label
-        self.positives = (true==pos_label).sum()
+        self.positives = np.count_nonzero(true)
+        self.negatives = np.count_nonzero(np.logical_not(true))
         
-        # self.TP = np.logical_and(self.vol_true,                     self.vol_pred).sum()
-        # self.TN = np.logical_and(self.vol_pred == 0,                self.vol_true == 0).sum()
-        # self.FP = np.logical_and(self.vol_pred == self.pos_label,   self.vol_true == 0).sum()
-        # self.FN = np.logical_and(self.vol_pred == 0,                self.vol_true == self.pos_label).sum()    
-        self.TP = np.sum(self.vol_true * self.vol_pred)
-        self.TN = np.sum((1-self.vol_true) * (1-self.vol_pred))
-        self.FP = np.sum((1-self.vol_true) * self.vol_pred)
-        self.FN = np.sum(self.vol_true * (1-self.vol_pred))
+        self.TP = np.logical_and(self.vol_true, self.vol_pred).sum()
+        self.TN = np.logical_and(np.logical_not(self.vol_pred), np.logical_not(self.vol_true)).sum()
+        self.FP = np.logical_and(np.logical_not(self.vol_true), self.vol_pred).sum()
+        self.FN = np.logical_and(self.vol_true, np.logical_not(self.vol_pred)).sum()    
+        
+        self.TPR = self.TP / self.positives
+        self.FPR = self.FP / self.negatives
         
     def jaccard_idx(self):
         j_index = self.TP / float(self.TP + self.FP + self.FN)
@@ -33,9 +32,9 @@ class metric:
         return dice
     
     # aka True Positive Rate (recall)
-    def sensitivity(self):
-        recall = self.TP / (self.TP + self.FN)
-        return recall
+    def recall(self):
+        sensitivity = self.TP / (self.TP + self.FN)
+        return sensitivity
     
     # aka True Negative Rate
     def specificity(self):
@@ -45,3 +44,7 @@ class metric:
     # aka False Positive Rate
     def fall_out(self):
         return self.FP / (self.FP + self.TN)
+    
+    def precision(self):
+        return self.TP / (self.TP + self.FP)
+    
