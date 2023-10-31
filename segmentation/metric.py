@@ -6,7 +6,7 @@ Created on Mon Oct 16 10:34:49 2023
 """
 
 import numpy as np
-
+import math
 #%%
 class metric:
     def __init__(self, true, predicted):
@@ -46,5 +46,8 @@ class metric:
         return self.FP / (self.FP + self.TN)
     
     def precision(self):
+        if(self.TP + self.FP == 0):
+            #print(self.TP, self.FP)
+            return 0
         return self.TP / (self.TP + self.FP)
     

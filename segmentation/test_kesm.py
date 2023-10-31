@@ -11,7 +11,6 @@ import manage_data as md
 import metric as mt
 import time
 import os
-#import cv2
 
 #%%
 # load the images as grayscale, crop, and stack them up into one volume

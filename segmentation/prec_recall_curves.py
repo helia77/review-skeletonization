@@ -13,11 +13,13 @@ TPR       = np.zeros((2, 256))
 FPR       = np.zeros((2, 256))
 recall    = np.zeros((2, 256))
 precision = np.zeros((2, 256))
-
-for t in range(255):
+#%%
+for t in range(256):
+    # global thresholding for KESM data
     threshed_kesm = (kesm_vol <= t)
     met_kesm = mt.metric(kesm_grtruth, threshed_kesm)
     
+    # global thresholding for Micro-CT data
     threshed_micro = (micro_vol >= t)
     met_micro = mt.metric(micro_grtruth, threshed_micro)
     
@@ -31,55 +33,21 @@ for t in range(255):
     precision[1, t] = met_micro.precision()
     recall[1, t] = TPR[1, t]
     
+    if (t < np.min(kesm_vol)):
+        precision[0, t] = 1
+        
 #%%
 # plt.figure(1)
-plt.plot(recall[1], precision[1], marker='.', label='Micro-CT')
 plt.plot(recall[0], precision[0], marker='.', label='KESM')
+plt.plot(recall[1], precision[1], marker='.', label='Micro-CT')
 
 plt.xlabel('Recall')
 plt.ylabel('Precision')
 
 plt.legend(loc='lower left')
-
-# plt.figure(2)
-# plt.plot(FPR[0], TPR[0], label='KESM')
-# plt.plot(FPR[1], TPR[1], label='Micro-CT')
-
-# plt.xlabel('FPR')
-# plt.ylabel('TPR')
-
-# plt.legend(loc='lower left')
-plt.show
-#%%
-# plot the intensity histogram of Micro-ct volume data
-flat_volume = micro_vol.flatten()
-
-# Plot the intensity histogram
-n, bins, patches = plt.hist(flat_volume, bins=100)
-plt.xlabel('Intensity')
-plt.ylabel('Frequency')
-plt.title('Intensity Histogram')
-
-plt.axvline(x=bins[np.argmax(n)], color='r', linestyle='dashed', linewidth=2)
-plt.text(bins[np.argmax(n)], -190000, round(bins[np.argmax(n)],2), rotation=270, color='red', ha='center')
 plt.grid()
 
 plt.show()
 
-#%%
-# plot the intensity histogram of KESM volume data
-flat_volume = kesm_vol.flatten()
-
-# Plot the intensity histogram
-n, bins, patches = plt.hist(kesm_vol.ravel(), 256)
-plt.xlabel('Intensity')
-plt.ylabel('Frequency')
-plt.title('Intensity Histogram of KESM')
-
-plt.axvline(x=bins[np.argmax(n)], color='r', linestyle='dashed', linewidth=2)
-plt.text(bins[np.argmax(n)], -30000, round(bins[np.argmax(n)],2), rotation=270, color='red', ha='center')
-plt.grid()
-
-plt.show()
 
 
