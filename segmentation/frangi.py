@@ -12,63 +12,38 @@ import time
 import numpy.linalg as lin
 from scipy.ndimage import filters
 #%%
-# filters given image based on scale and returns output image with vesselness values
+# filter the given image based on given scale and returns output image with vesselness values
 def vesselness_2D(src, scale, beta, c):
-    # create 2D Hessian kernels to later convolve with the image
-    # half_kernel = math.ceil(3 * scale)
-    # n_kern_x = 2 * half_kernel + 1
-    # n_kern_y = n_kern_x
-    
-    # # Hessian kernels
-    # kern_xx_f = np.zeros((n_kern_x, n_kern_y), dtype=float)  # kernel to create Dxx matrix
-    # kern_xy_f = np.zeros((n_kern_x, n_kern_y), dtype=float)  # kernel to create Dxy matrix
-    # kern_yy_f = np.zeros((n_kern_x, n_kern_y), dtype=float)  # kernel to create Dyy matrix
-    
+
     s2 = scale * scale
-    # half_PI_s6 = 1.0 / (2.0 * math.pi * (s2**3))
     
-    # for x in range(-half_kernel, half_kernel + 1):
-    #     x2 = x**2
-    #     for y in range(-half_kernel, half_kernel + 1):
-    #         y2 = y**2
-    #         kern_xx_f[x + half_kernel][y + half_kernel] = half_PI_s6 * (x2  - s2) * math.exp(-(x2 + y2) / (2.0 * s2))
-    #         kern_xy_f[x + half_kernel][y + half_kernel] = half_PI_s6 * (x * y) * math.exp(-(x2 + y2) / (2.0 * s2))
-    
-    # kern_yy_f = np.transpose(kern_xx_f, (1, 0))
-    
-    # convolution of each kernel
-    # Dxx = sc.fftconvolve(src, kern_xx_f, mode='same') * scale * scale
-    # Dxy = sc.fftconvolve(src, kern_xy_f, mode='same') * scale * scale
-    # Dyy = sc.fftconvolve(src, kern_yy_f, mode='same') * scale * scale
-    Dxx = np.zeros(src.shape)
-    Dxy = np.zeros(src.shape)
-    Dyy = np.zeros(src.shape)
-    filters.gaussian_filter(src, (scale, scale), (0, 2), Dxx)
-    filters.gaussian_filter(src, (scale, scale), (1, 1), Dxy)
-    filters.gaussian_filter(src, (scale, scale), (2, 0), Dyy)
-    Dxx *= s2
-    Dxy *= s2
-    Dyy *= s2
-    
+    # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
+    D = np.zeros(src.shape[0], src.shape[1], 3)
+    filters.gaussian_filter(src, (scale, scale), (0, 2), D[:, :, 0])            # Dxx
+    filters.gaussian_filter(src, (scale, scale), (1, 1), D[:, :, 1])            # Dxy
+    filters.gaussian_filter(src, (scale, scale), (2, 0), D[:, :, 2])            # Dyy
+    D *= s2                                                                     # for normalization
+
     # eigenvalue calculations from Dxx, Dxy, Dyy and compute the vesselnes function
     output = np.zeros((src.shape))
     
-    for x in range(Dxx.shape[0]):
-        for y in range(Dxx.shape[1]):
+    for x in range(src.shape[0]):
+        for y in range(src.shape[1]):
             # ----------- using conventional way (faster) ------------- #
-            dxx = Dxx[x, y]
-            dxy = Dxy[x, y]
-            dyy = Dyy[x, y]
+            dxx = D[x, y, 0]
+            dxy = D[x, y, 1]
+            dyy = D[x, y, 2]
             
-            # # calculate eigenvalues
+            # calculate eigenvalues
             tmp = dxx + dyy
             tmp2 = math.sqrt((dxx - dyy)**2 + 4*(dxy**2))
             
-            mu1 = 0.5 * (tmp + tmp2)
-            mu2 = 0.5 * (tmp - tmp2)
+            lambda1 = 0.5 * (tmp + tmp2)
+            lambda2 = 0.5 * (tmp - tmp2)
             
-            lambda1 = mu1 if (abs(mu1) < abs(mu2)) else mu2
-            lambda2 = mu2 if (abs(mu1) < abs(mu2)) else mu1
+            # making sure they're sorted based on absolute values
+            if (abs(lambda1) < abs(lambda2)):
+                lambda2, lambda1 = lambda1, lambda2
             
             # ----------- using numpy linalg eigendecomposition (slower) ------------- #
             # hess_mat = np.zeros((2,2))
@@ -97,7 +72,7 @@ def frangi_2D(src, B, C, start, stop, step):
     all_filters = []
     
     beta = 2 * (B**2)
-    c    = 2* (C**2)
+    c    = 2 * (C**2)
     scale_range = np.arange(start, stop, step)
     for scale in scale_range:
         filtered_img = vesselness_2D(src, scale, beta, c)
