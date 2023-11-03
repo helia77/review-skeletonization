@@ -94,9 +94,9 @@ def frangi_2D(src, B, C, start, stop, step):
         
 
 def vesselness_3D(src, scale, alpha, beta, c):
-    # eigenvalue calculations from Dxx, Dxy, Dyy and compute the vesselnes function
     s3 = scale * scale * scale
     
+    # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
     D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
     
     filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), D[:, :, :, 2,2])

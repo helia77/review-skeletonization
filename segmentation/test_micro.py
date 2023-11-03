@@ -13,6 +13,21 @@ import metric as mt
 import time
 import os
 import cv2
+import cthresholding as cp_th
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
+#%%
+volume = md.load_images(path, [280, 880], True, [700, 1010], True, [280, 120])
+#%%
+img_list = md.load_images(path, [280, 880], False, [700, 1010], True, [280, 120])
+#%%
+path_sv = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/check'
+for i, img in enumerate(img_list):
+    cv2.imwrite(os.path.join(path_sv, 'img' + str(i) + '.jpg'), img)
+#%%
+# ground truth
+path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/outdata'
+gr_truth = md.load_images(path, [280, 880], True, [700, 1010], True, [280, 120])
+gr_truth = np.where(gr_truth == 255, 1, 0)
 
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
@@ -24,10 +39,6 @@ grayscale = True
 volume = md.load_images(path, crop_size, stack, crop_size, grayscale, [600, 600])
 img_list = md.load_images(path, crop_size, not stack, crop_size, grayscale, [600, 600])
 
-# save nrrd file to load in Slicer3D
-#filename = 'raw_micro_200x200x200.nrrd'
-#md.numpy_to_nrrd(volume, filename)
-
 # load the true volume
 true_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
 vol_true = md.nrrd_to_numpy(true_path)                           # convert nrrd file to numpy array
@@ -35,7 +46,7 @@ vol_true = md.nrrd_to_numpy(true_path)                           # convert nrrd 
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
-thresh_volume, best_thresh = th.compute_otsu(volume, 1)
+thresh_volume, best_thresh = th.compute_otsu(volume, background='black')
 
 print('\nOtsu\'s (volume) threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
 

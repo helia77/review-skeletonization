@@ -12,16 +12,23 @@ import cv2
 #%%
 # Based on the code from Wikipedia
 # returns a thresholded volume using Otsu's thresholding method
-def compute_otsu(volume, pos_label):
+def compute_otsu(volume, background='black'):
     # testing all thresholds from 0 to the maximum of the image
-    threshold_range = range(np.max(volume)+1)
+    threshold_range = range(np.min(volume), np.max(volume)+1, 1)
     criteria = []
     for i, th in enumerate(threshold_range):
+        print(th, end=' ')
         """Otsu's method to compute criteria."""
-        #if (i%10 == 0): print(i , end=' ') 
+        
         # create the thresholded volume
         thresholded_vol = np.zeros(volume.shape)
-        thresholded_vol[volume >= th] = 1
+        if(background == 'black'):
+            thresholded_vol[volume >= th] = 1
+        elif(background == 'white'):
+            thresholded_vol[volume <= th] = 1
+        else:
+            print('Wrong background input. Choose \'white\' or \'black\'.')
+            return 0
     
         # compute weights
         nb_pixels = volume.size
@@ -48,7 +55,11 @@ def compute_otsu(volume, pos_label):
     # best threshold is the one minimizing the Otsu criteria
     best_threshold = threshold_range[np.argmin(criteria)]
     thresh_volume = np.zeros(volume.shape, dtype=np.uint8)
-    thresh_volume[volume > best_threshold] = pos_label
+    
+    if(background == 'black'):
+        thresh_volume[volume > best_threshold] = 1
+    elif(background == 'white'):
+        thresh_volume[volume < best_threshold] = 1
     
     return thresh_volume, best_threshold
     

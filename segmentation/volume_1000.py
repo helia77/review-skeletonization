@@ -11,7 +11,8 @@ import os
 #%%
 folder_path = 'C:/Users/helioum/Desktop/region3_helia'
 num_images = 772
-volume_1000 = md.load_images(folder_path, num_images, True, grayscale=True)
+# inputs: folder_path, num_images, stack=False, crop_size=[0,0], grayscale=False, crop_location = [0,0]
+volume_1000 = md.load_images(folder_path, num_images, True, [1000, 1000], True)
 
 #%%
 # vol_ x _ y _ z : x horizontal, y vertical, z depth
@@ -112,9 +113,9 @@ vol[0:200, 0:200, 0:1000] = vol_y0
 vol[200:400, 0:200, 0:1000] = vol_z1
 vol[0:200, 200:400, 0:1000] = vol_y1
 vol[200:400, 200:400, 0:1000] = vol_z2
-#%%
+
 #md.numpy_to_nrrd(vol, 'open_me.nrrd')
-np.save('ground_truth.npy', vol)
+np.save('ground_truth_kesm.npy', vol.astype(np.uint8))
 #%%
 whole_vol = np.zeros((400, 400, 1000))
 whole_vol[0:200, 0:200, 0:1000] = vol_1
@@ -122,7 +123,7 @@ whole_vol[200:400, 0:200, 0:1000] = vol_3
 whole_vol[0:200, 200:400, 0:1000] = vol_2
 whole_vol[200:400, 200:400, 0:1000] = vol_4
 
-np.save('whole_volume.npy', whole_vol)
+np.save('whole_volume_kesm.npy', whole_vol.astype(np.uint8))
 
 
 

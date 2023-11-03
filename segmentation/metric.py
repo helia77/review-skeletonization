@@ -23,13 +23,9 @@ class metric:
         self.TPR = self.TP / self.positives
         self.FPR = self.FP / self.negatives
         
-    def jaccard_idx(self):
-        j_index = self.TP / float(self.TP + self.FP + self.FN)
-        return j_index
-    
-    def dice_coeff(self):
-        dice = (2*self.TP) / float(2*self.TP + self.FP + self.FN)
-        return dice
+        self.jaccard = self.TP / float(self.TP + self.FP + self.FN)
+        self.dice = (2*self.TP) / float(2*self.TP + self.FP + self.FN)
+        
     
     # aka True Positive Rate (recall)
     def recall(self):

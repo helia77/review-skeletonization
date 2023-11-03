@@ -19,18 +19,18 @@ import nrrd
 # stack: if True, it returns all the images as multi-dimension np array - else, returns a list of images
 # crop_size: if not zero, it crops all the images into one same size, in both x and y axes
 # grayscale: if True, it loads all the images as grayscale. Else, loads as 3-channel RGB
-def load_images(folder_path, num_images, stack=False, crop_size=0, grayscale=False, crop_location = [0,0]):
+def load_images(folder_path, num_img_range, stack=False, crop_size=[0,0], grayscale=False, crop_location = [0,0]):
     
     # create a list of all image names
     images_list = [f for f in os.listdir(folder_path) if f.endswith('.bmp') or f.endswith('.jpg') or f.endswith('.tif') or f.endswith('.png')]
     
     images = []
-    for i in range(num_images):
+    for i in range(num_img_range[0], num_img_range[1], 1):
         # load the image with desired type (grayscale or RGB)
         img = cv2.imread(os.path.join(folder_path, images_list[i]), (cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_COLOR))
         x, y = crop_location
         if crop_size:
-            img = img[x:x+crop_size, y:y+crop_size]
+            img = img[x:x+crop_size[0], y:y+crop_size[1]]
             
         images.append(img)
 
