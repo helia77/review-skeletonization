@@ -14,15 +14,12 @@ import time
 import os
 import cv2
 import cthresholding as cp_th
+
+#%%
+volume = np.load('micro_raw_600x700x1010.npy')
+#%%
 path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
-#%%
-volume = md.load_images(path, [280, 880], True, [700, 1010], True, [280, 120])
-#%%
 img_list = md.load_images(path, [280, 880], False, [700, 1010], True, [280, 120])
-#%%
-path_sv = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/check'
-for i, img in enumerate(img_list):
-    cv2.imwrite(os.path.join(path_sv, 'img' + str(i) + '.jpg'), img)
 #%%
 # ground truth
 path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/outdata'
@@ -31,24 +28,18 @@ gr_truth = np.where(gr_truth == 255, 1, 0)
 
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
-path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
-crop_size = 200
-stack = True
-grayscale = True
-
-volume = md.load_images(path, crop_size, stack, crop_size, grayscale, [600, 600])
-img_list = md.load_images(path, crop_size, not stack, crop_size, grayscale, [600, 600])
-
-# load the true volume
-true_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
-vol_true = md.nrrd_to_numpy(true_path)                           # convert nrrd file to numpy array
+# path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
+# volume = md.load_images(path, 200, True, 200, True, [600, 600])
+# img_list = md.load_images(path, 200, False, 200, True, [600, 600])
+# # load the true volume
+# true_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/micro_200x200x200.nrrd'
+# vol_true = md.nrrd_to_numpy(true_path)                           # convert nrrd file to numpy array
 
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
-thresh_volume, best_thresh = th.compute_otsu(volume, background='black')
-
-print('\nOtsu\'s (volume) threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
+thresh_volume_cp, best_thresh_cp = cp_th.compute_otsu(volume, background='black')
+print('\nOtsu\'s (volume) threshold: ' + str(best_thresh_cp) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
 
 #%%
 # test otsu's method for each image slice
@@ -56,7 +47,8 @@ thresh_img = []
 mean = 0
 start = time.time()
 for i, img in enumerate(img_list):
-    thresh, test = th.compute_otsu(img, 1)
+    print(i, end=' ')
+    test, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU,)
     mean += test
     if i == 0:
         first_thresh = test
@@ -68,38 +60,41 @@ print('\nOtsu\'s (image) threshold: Done \nExecution time: --- %s seconds ---' %
 #%%
 # testing for adaptive mean thresholding
 start = time.time()
-adaptive_mean = th.adaptive_mean(img_list, 21, 5)
-adaptive_gaussian = th.adaptive_gaussian(img_list, 21, 5)
+adaptive_mean = th.adaptive_mean(img_list, 5, 5)
+print('\nAdaptive threshold: Done\nExecution time: --- %s seconds ---' % (time.time() - start))
+start = time.time()
+adaptive_gaussian = th.adaptive_gaussian(img_list, 5, 5)
 print('\nAdaptive threshold: Done\nExecution time: --- %s seconds ---' % (time.time() - start))
 #%%
 # calculate metrics
-volume_met   = mt.metric(vol_true, thresh_volume)
-img_met      = mt.metric(vol_true, thresh_images)
-mean_met     = mt.metric(vol_true, adaptive_mean)
-gaussian_met = mt.metric(vol_true, adaptive_gaussian)
+volume_met   = mt.metric(gr_truth, thresh_volume)
+img_met      = mt.metric(gr_truth, thresh_images)
+mean_met     = mt.metric(gr_truth, adaptive_mean)
+gaussian_met = mt.metric(gr_truth, adaptive_gaussian)
 
 #%%
-folder_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/figures_micro/'
-os.makedirs(folder_path)
+img_met      = mt.metric(gr_truth, thresh_images)
+#%%
 # plot the images
-for i in range(volume.shape[0]):
-    fig, ax = plt.subplots(1,3)
-    
-    ax[0].imshow(img_list[i], cmap='gray')
-    ax[0].set_title('Original volume')
-    ax[0].axis('off')
-    
-    ax[1].imshow(vol_true[i, :, :], cmap='gray')
-    ax[1].set_title('Ground Truth')
-    ax[1].axis('off')
-    
-    ax[2].imshow(thresh_images[i, :, :], cmap='gray')
-    ax[2].set_title('Otsu\'s images')
-    ax[2].axis('off')
-    
-    plt.tight_layout()
-    plt.savefig(folder_path + 'plot' + str(i) + '.png')
-    plt.close(fig)
+fig, ax = plt.subplots(2,2)
+
+i = 400
+ax[0,0].imshow(volume[i], cmap='gray')
+ax[0,0].set_title('Original volume')
+ax[0,0].axis('off')
+
+ax[0,1].imshow(gr_truth[i, :, :], cmap='gray')
+ax[0,1].set_title('Ground Truth')
+ax[0,1].axis('off')
+
+ax[1,0].imshow(thresh_volume_cp[i, :, :], cmap='gray')
+ax[1,0].set_title('Otsu\'s vol cp')
+ax[1,0].axis('off')
+
+ax[1,1].imshow(thresh_images[i, :, :], cmap='gray')
+ax[1,1].set_title('Otsu\'s Img')
+ax[1,1].axis('off')
+plt.tight_layout()
 
 #%%
 # show histogram of a slice
@@ -114,31 +109,5 @@ ax.set_xlim([0,255])
 
 plt.show()
 
-#%%
-# plot the ROC curve
-TPR = []
-FPR = []
-wtf = []
-# iterate through all thresholds
-start = time.time()
-for i in range(50, np.min(volume), -1):
-    thresholded = np.zeros(volume.shape)
-    thresholded = (volume >= i).astype(int)
-    met = mt.metric(vol_true, thresholded, 1)
-    if(met.sensitivity() == 1):
-        wtf.append(thresholded)
-        print(str(i) + ' ' + str(met.TP) + ' ' + str(met.FN))
-    TPR.append(met.sensitivity())
-    FPR.append(met.fall_out())
-
-print('\nROC curve calculation: Done\nExecution time: --- %s seconds ---' % (time.time() - start))
-
-#%%
-plt.plot(FPR, TPR, label='ROC', marker='o', color='green')
-plt.plot([0, 1], [0, 1], '--', color='gray', label='Random Guess')
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.legend()
-plt.show()
 
 

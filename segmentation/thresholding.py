@@ -17,7 +17,7 @@ def compute_otsu(volume, background='black'):
     threshold_range = range(np.min(volume), np.max(volume)+1, 1)
     criteria = []
     for i, th in enumerate(threshold_range):
-        print(th, end=' ')
+        #(th, end=' ')
         """Otsu's method to compute criteria."""
         
         # create the thresholded volume
