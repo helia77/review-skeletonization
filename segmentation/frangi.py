@@ -10,6 +10,7 @@ import math
 import scipy.signal as sc
 import time
 import numpy.linalg as lin
+import cupy as cp
 from scipy.ndimage import filters
 #%%
 # filter the given image based on given scale and returns output image with vesselness values
@@ -39,11 +40,11 @@ def vesselness_2D(src, scale, beta, c):
             tmp2 = math.sqrt((dxx - dyy)**2 + 4*(dxy**2))
             
             lambda1 = 0.5 * (tmp + tmp2)
-            lambda2 = 0.5 * (tmp - tmp2)
+            l2 = 0.5 * (tmp - tmp2)
             
             # making sure they're sorted based on absolute values
-            if (abs(lambda1) < abs(lambda2)):
-                lambda2, lambda1 = lambda1, lambda2
+            if (abs(lambda1) < abs(l2)):
+                l2, lambda1 = lambda1, l2
             
             # ----------- using numpy linalg eigendecomposition (slower) ------------- #
             # hess_mat = np.zeros((2,2))
@@ -54,9 +55,9 @@ def vesselness_2D(src, scale, beta, c):
             
             # lam1, lam2 = np.linalg.eigvalsh(hess_mat)
             # if (abs(lam1) > abs(lam2)):
-            #     lambda1, lambda2 = lam2, lam1
+            #     lambda1, l2 = lam2, lam1
            
-            if(lambda2==0):
+            if(l2==0):
                 lambda2 = math.nextafter(0, 1)
             
             Rb = lambda1/lambda2
@@ -93,59 +94,77 @@ def frangi_2D(src, B, C, start, stop, step):
     return output_img
         
 
-def vesselness_3D(src, scale, alpha, beta, c):
+def vesselness_3D(src, scale, alpha, beta, c, background):
     s3 = scale * scale * scale
     
     # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
     D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
     
+    start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), D[:, :, :, 2,2])
+    print('1st done: ', time.time() - start, ' seconds')
+    start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (0, 1, 1), D[:, :, :, 1,2])
+    print('2nd done: ', time.time() - start, ' seconds')
+    start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (0, 2, 0), D[:, :, :, 1,1])
+    print('3rd done: ', time.time() - start, ' seconds')
+    start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (2, 0, 0), D[:, :, :, 0,0])
+    print('4th done: ', time.time() - start, ' seconds')
+    start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (1, 0, 1), D[:, :, :, 0,2])
+    print('5th done: ', time.time() - start, ' seconds')
+    start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), D[:, :, :, 0,1])
+    print('6th done: ', time.time() - start, ' seconds')
+    
     D[:, :, :, 2,1] = D[:, :, :, 1,2]
     D[:, :, :, 1,0] = D[:, :, :, 0,1]
     D[:, :, :, 2,0] = D[:, :, :, 0,2]
-    
+    print('Gaussian done.')
     # normalization
     D *= s3
-    
+
     output = np.zeros((src.shape))
+    print('\neigendecoposition: ...', end=' ')
+    start = time.time()
+    lambdas = lin.eigvalsh(D)
+    print(' Done.')
+    print('Execution time: ', time.time() - start, ' seconds')
     
-    for x in range(src.shape[0]):
+    
+    for x in range(src.shape[2]):
+        # if (x%100 == 0):
+        #     print(x)
         for y in range(src.shape[1]):
-            for z in range(src.shape[2]):
-            
-                lambda3, lambda2, lambda1 = lin.eigvalsh(D[z, y, x, :, :])
-                if (abs(lambda1) > abs(lambda2)):
-                    lambda2, lambda1 = lambda1, lambda2
-                if (abs(lambda2) > abs(lambda3)):
-                    lambda3, lambda2 = lambda2, lambda3
+            for z in range(src.shape[0]):
+                l1, l2, l3 = sorted(lambdas[z, y, x], key=abs)
                     
-                if (lambda3==0):
-                    lambda3 = math.nextafter(0,1)
-                if (lambda2 == 0):
-                    lambda2 = math.nextafter(0,1)
+                if (l3 == 0):
+                    l3 = math.nextafter(0,1)
+                if (l2 == 0):
+                    l2 = math.nextafter(0,1)
                 
-                Rb2 = np.float128((lambda1**2)/(lambda2 * lambda3))             # Rb2 tends to get very large -> use of float128
-                Ra = lambda2 / lambda3
-                S2 = (lambda1**2) + (lambda2**2) + (lambda3**2)
+                Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large -> use of float128
+                Ra = l2 / l3
+                S2 = (l1**2) + (l2**2) + (l3**2)
                 
                 term1 = math.exp(-(Ra**2) / alpha)
-                try: 
-                    term2 = np.exp(-Rb2 / beta)
-                except OverflowError:
-                    term2 = float('inf')
-                    print('yes')
+                term2 = np.exp(-Rb2 / beta)
+
                 term3 = math.exp(-S2 / c)
-                
-                output[x, y, z] = (1.0 - term1) * (term2) * (1.0 - term3) if (lambda2 <= 0 and lambda3 <= 0) else 0
+                if (background == 'white'):
+                    output[z, y, x] = (1.0 - term1) * (term2) * (1.0 - term3) if (l2 >= 0 and l3 >= 0) else 0
+                elif (background == 'black'):
+                    output[z, y, x] = (1.0 - term1) * (term2) * (1.0 - term3) if (l2 <= 0 and l3 <= 0) else 0
+                else:
+                    print('Invalid background - choose black or white')
+                    return 0
             
     return output
 
-def frangi_3D(src, A, B, C, start, stop, step):
+def frangi_3D(src, A, B, C, start, stop, step, background='white'):
     all_filters = []
     
     beta  = 2 * (B**2)
@@ -153,24 +172,24 @@ def frangi_3D(src, A, B, C, start, stop, step):
     alpha = 2 * (A**2)
     scale_range = np.arange(start, stop, step)
     for scale in scale_range:
-        print('Scale: ' + str(scale) + ' started ...')
+        print('\nScale: ' + str(scale) + ' started ...')
         start = time.time()
-        filtered_vol = vesselness_3D(src, scale, alpha, beta, c)
+        filtered_vol = vesselness_3D(src, scale, alpha, beta, c, background)
         all_filters.append(filtered_vol)
-        print('Scale: ' + str(scale) + ' finished. \t Execution time: ' + str(time.time() - start))
+        print('\nScale: ' + str(scale) + ' finished. \nExecution time: ' + str(time.time() - start))
     
     # pick the pixels with the highest vesselness value
     max_vol = all_filters[0]
     output_vol = np.zeros(src.shape)
-    
-    for x in range(src.shape[0]):
+    print('getting maximum pixels...')
+    for x in range(src.shape[2]):
         for y in range(src.shape[1]):
-            for z in range(src.shape[2]):
-                max_value = max_vol[x, y, z]
+            for z in range(src.shape[0]):
+                max_value = max_vol[z, y, x]
                 for vol in all_filters:
-                    if (vol[x, y, z] > max_value):
-                        max_value = vol[x, y, z]
-                output_vol[x, y] = max_value
+                    if (vol[z, y, x] > max_value):
+                        max_value = vol[z, y, x]
+                output_vol[z, y, x] = max_value
     
     return output_vol
 

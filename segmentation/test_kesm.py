@@ -11,7 +11,7 @@ import manage_data as md
 import metric as mt
 import time
 import os
-
+import cthresholding as cp_th
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
 # path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/KESM'
@@ -33,7 +33,7 @@ volume = np.load('whole_volume_kesm.npy').astype(np.uint8)
 gr_truth = np.load('ground_truth_kesm.npy').astype(np.uint8)
 
 folder_path = 'C:/Users/helioum/Desktop/region3_helia'
-img_list = md.load_images(folder_path, 400, stack=False, crop_size=[400, 1000], grayscale=True, crop_location = [0,0])
+img_list = md.load_images(folder_path, [0,400], stack=False, crop_size=[400, 1000], grayscale=True, crop_location = [0,0])
 
 #%%
 # check to make sure all volumes are from the same section
@@ -53,7 +53,7 @@ ax[2].axis('off')
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
-thresh_volume, best_thresh = th.compute_otsu(volume,  background='white')
+thresh_volume, best_thresh = cp_th.compute_otsu(volume,  background='white')
 
 exe_time = time.time() - start
 if (exe_time > 60):

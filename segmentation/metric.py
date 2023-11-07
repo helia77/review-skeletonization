@@ -43,7 +43,6 @@ class metric:
     
     def precision(self):
         if(self.TP + self.FP == 0):
-            #print(self.TP, self.FP)
             return 0
         return self.TP / (self.TP + self.FP)
     

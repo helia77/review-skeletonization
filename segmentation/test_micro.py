@@ -20,12 +20,9 @@ volume = np.load('micro_raw_600x700x1010.npy')
 #%%
 path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
 img_list = md.load_images(path, [280, 880], False, [700, 1010], True, [280, 120])
-#%%
-# ground truth
-path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/outdata'
-gr_truth = md.load_images(path, [280, 880], True, [700, 1010], True, [280, 120])
-gr_truth = np.where(gr_truth == 255, 1, 0)
 
+#%% 
+gr_truth = np.load('micro_grtruth_600x700x1010.npy')
 #%%
 # load the images as grayscale, crop, and stack them up into one volume
 # path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/data/Artem\'s data/indata'
@@ -38,8 +35,8 @@ gr_truth = np.where(gr_truth == 255, 1, 0)
 #%%
 # compute Otsu's thresholded volume
 start = time.time()
-thresh_volume_cp, best_thresh_cp = cp_th.compute_otsu(volume, background='black')
-print('\nOtsu\'s (volume) threshold: ' + str(best_thresh_cp) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
+thresh_volume, best_thresh = cp_th.compute_otsu(volume, background='black')
+print('\nOtsu\'s (volume) threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (time.time() - start))
 
 #%%
 # test otsu's method for each image slice
@@ -73,12 +70,11 @@ mean_met     = mt.metric(gr_truth, adaptive_mean)
 gaussian_met = mt.metric(gr_truth, adaptive_gaussian)
 
 #%%
-img_met      = mt.metric(gr_truth, thresh_images)
-#%%
 # plot the images
 fig, ax = plt.subplots(2,2)
 
-i = 400
+i = 100
+fig.suptitle('Image %s' % i)
 ax[0,0].imshow(volume[i], cmap='gray')
 ax[0,0].set_title('Original volume')
 ax[0,0].axis('off')
@@ -87,8 +83,8 @@ ax[0,1].imshow(gr_truth[i, :, :], cmap='gray')
 ax[0,1].set_title('Ground Truth')
 ax[0,1].axis('off')
 
-ax[1,0].imshow(thresh_volume_cp[i, :, :], cmap='gray')
-ax[1,0].set_title('Otsu\'s vol cp')
+ax[1,0].imshow(thresh_volume[i, :, :], cmap='gray')
+ax[1,0].set_title('Otsu\'s vol')
 ax[1,0].axis('off')
 
 ax[1,1].imshow(thresh_images[i, :, :], cmap='gray')
@@ -96,17 +92,16 @@ ax[1,1].set_title('Otsu\'s Img')
 ax[1,1].axis('off')
 plt.tight_layout()
 
-#%%
+ #%%
 # show histogram of a slice
-plt.hist(volume[10, :, :].ravel(), 256)
-plt.axvline(x=best_thresh, color='r', linestyle='dashed', linewidth=2)
-plt.axvline(x=mean, color='g', linestyle='dashed', linewidth=2)
+plt.hist(volume.ravel(), 256)
+plt.axvline(x=best_thresh, color='r', linestyle='dashed', linewidth=2, label='Volume')
+plt.axvline(x=mean, color='g', linestyle='dashed', linewidth=2, label='Image')
 plt.title('Image Histogram')
 plt.xlabel('Intensity')
 plt.ylabel('Number of Pixels')
 ax = plt.gca()
-ax.set_xlim([0,255])
-
+plt.legend()
 plt.show()
 
 
