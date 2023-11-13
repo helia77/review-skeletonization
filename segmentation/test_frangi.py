@@ -57,6 +57,7 @@ ax[2].axis('off')
 
 
 #%%
+# apply Otsu's thresholding to the whole volume
 start = time.time()
 thresh_volume, best_thresh = cp_th.compute_otsu(new_result,  background='white')
 
@@ -67,6 +68,7 @@ else:
     print('\nOtsu\'s threshold: ' + str(best_thresh) + '\nExecution time: --- %s seconds ---' % (exe_time))
 
 #%%
+# apply Otsu's thresholding to slices
 thresh_img = []
 mean = 0
 start = time.time()
