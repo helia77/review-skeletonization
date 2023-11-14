@@ -145,8 +145,7 @@ def terms_alpha(src, scale, beta, c):
                     output[z, y, x, 2] = (1.0 - term3)
     print('terms calculation done.')
     return output
-
-
+    
 def terms_beta(src, scale, alpha, c):
     lambdas = eigens(src, scale)
     output = np.zeros(lambdas.shape)
@@ -175,7 +174,7 @@ def terms_beta(src, scale, alpha, c):
     print('terms calculation done.')
     return output
 
-def terms_c(src, scale, alpha=1, beta=1, back='white'):
+def terms_c(src, scale, alpha, beta, back='white'):
     lambdas = eigens(src, scale)
     output = np.zeros(lambdas.shape)
     for x in range(lambdas.shape[2]):
@@ -187,17 +186,17 @@ def terms_c(src, scale, alpha=1, beta=1, back='white'):
                 elif(back=='black' and (l2 > 0 or l3 > 0)):
                     continue
                 else:
-                    if (l3 == 0):
-                        l3 = math.nextafter(0,1)
-                    if (l2 == 0):
-                        l2 = math.nextafter(0,1)
+                    # if (l3 == 0):
+                    #     l3 = math.nextafter(0,1)
+                    # if (l2 == 0):
+                    #     l2 = math.nextafter(0,1)
                     
-                    Ra2 = (l2 / l3)**2
-                    Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large -> use float64
+                    # Ra2 = (l2 / l3)**2
+                    # Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large -> use float64
                     S2 = (l1**2) + (l2**2) + (l3**2)
                     
-                    term1 = math.exp(-(Ra2) / alpha)
-                    term2 = np.exp(-Rb2 / beta)
+                    # term1 = math.exp(-(Ra2) / alpha)
+                    # term2 = np.exp(-Rb2 / beta)
                     
                     output[z, y, x, 0] = 1#(1.0 - term1)
                     output[z, y, x, 1] = 1#term2
@@ -282,7 +281,7 @@ def process_alpha(A, ratios, sample_gr):
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
     print('.', end='')
-    return np.uint8(output)#, thresh_volume, met_otsu
+    return np.uint8(output), thresh_volume, met_otsu
 
 def process_beta(B, ratios, sample_gr):
     beta = 2 * (B**2)
@@ -303,7 +302,7 @@ def process_beta(B, ratios, sample_gr):
     print('.', end='')
     return np.uint8(output)#, thresh_volume, met_otsu
 
-def process_c(C, terms, sample_gr, back='white'):
+def process_c(C, terms, sample_gr, back):
     c = 2 * (C**2)
     vesselness_1 = vesselnese_c(terms[0], c)
     vesselness_2 = vesselnese_c(terms[1], c)
@@ -315,7 +314,8 @@ def process_c(C, terms, sample_gr, back='white'):
     output = highest_pixel(all_filters)             # outputed volume for this alpha value
 
     # apply otsu's threshold
-    thresh_volume, best_thresh = cp_th.compute_otsu(output,  background=back)
+    # after Frangi's filter, the background is black
+    thresh_volume, best_thresh = cp_th.compute_otsu(output,  background='black')
     
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)

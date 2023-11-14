@@ -18,8 +18,8 @@ import plot_curves as pltc
 volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
-sample_vol = volume[200:300, 0:100, 0:100]
-sample_gr = gr_truth[200:300, 0:100, 0:100]
+sample_vol = volume[200:400, 0:200, 0:100]
+sample_gr = gr_truth[200:400, 0:200, 0:100]
 #%%
 # preprocess the terms in vesselness function based on two parameters only - later change the other parameter
 start = time.time()
@@ -31,55 +31,69 @@ start = time.time()
 
 #alpha_terms = [frg.terms_alpha(volume, s, beta, c) for s in scale]
 #beta_terms  = [frg.terms_beta(volume, s, alpha, c) for s in scale]
-c_terms     = [frg.terms_c(sample_vol, s, alpha, beta) for s in scale]
-    
+c_terms     = [frg.terms_c(sample_vol, s, alpha, beta, 'white') for s in scale]
+
 print(f"Calculating terms took {time.time() - start} seconds")
     
 #%%
 # find the best c value
-c_range = [0.01, 1, 45, 100, 1000]
+#c_range = [0.01, 1, 45, 100, 1000]
+c_range = np.linspace(10, 60, 5)
 start = time.time()
-threshs_c = [frg.process_c(C, c_terms, sample_gr) for C in c_range]
+threshs_c = [frg.process_c(C, c_terms, sample_gr, 'white') for C in c_range]
 print(f"\ntook {time.time() - start} seconds")
 c_range = np.array(c_range)
 #%%
 plt.figure(1)
 plt.grid()
 for i in range(c_range.size):
-    if(i == 3):
+    if(i == 2):
         pltc.plot_pre_recall(threshs_c[i][0], sample_gr, marker= 'x', label='c='+str(c_range[i]))
-    elif(i == 4):
+    elif(i == 3):
         pltc.plot_pre_recall(threshs_c[i][0], sample_gr, marker= 'o', label='c='+str(c_range[i]))
     else:
         pltc.plot_pre_recall(threshs_c[i][0], sample_gr, label='c='+str(c_range[i]))
+# pltc.plot_pre_recall(threshs_c[2][0], sample_gr, marker='_', label='c='+str(c_range[2]))
+#%%
+# make the dictionary
+dic = {}
+for i in range(c_range.size):
+    met = threshs_c[i][2]
+    dic[str(c_range[i])] = met.jaccard(), met.dice()
+normal_otsu, best = cp_th.compute_otsu(sample_vol, 'white')
+met_otsu = mt.metric(sample_gr, normal_otsu)
+dic['otsu'] = met_otsu.jaccard(), met_otsu.dice()
+
+#%%
+frangis = [threshs_c[i][0] for i in range(len(threshs_c))]
+pltc.plot_auc_pr(frangis, sample_gr, c_range)
 #%%
 i = 35
-def ppp(i):
-    fig, ax = plt.subplots(2, 3)
-    fig.suptitle('c param - Image ' + str(i))
-    ax[0, 0].imshow(threshs_c[0][0][i], cmap='gray')
-    ax[0, 0].set_title('c = 0.01')
-    ax[0, 0].axis('off')
-    
-    ax[0, 1].imshow(threshs_c[1][0][i], cmap='gray')
-    ax[0, 1].set_title('c = 1')
-    ax[0, 1].axis('off')
-    
-    ax[0, 2].imshow(threshs_c[2][0][i], cmap='gray')
-    ax[0, 2].set_title('c = 45')
-    ax[0, 2].axis('off')
-    
-    ax[1, 0].imshow(threshs_c[3][0][i], cmap='gray')
-    ax[1, 0].set_title('c = 100')
-    ax[1, 0].axis('off')
-    
-    ax[1, 1].imshow(threshs_c[4][0][i], cmap='gray')
-    ax[1, 1].set_title('c = 1000')
-    ax[1, 1].axis('off')
-    
-    ax[1, 2].imshow(sample_gr[i], cmap='gray')
-    ax[1, 2].set_title('raw volume')
-    ax[1, 2].axis('off')
+fig, ax = plt.subplots(2, 3)
+fig.suptitle('c param - Image ' + str(i))
+ax[0, 0].imshow(normal_otsu[i], cmap='gray')
+ax[0, 0].set_title('c = 0.01')
+ax[0, 0].axis('off')
+
+ax[0, 1].imshow(threshs_c[1][1][i], cmap='gray')
+ax[0, 1].set_title('c = 1')
+ax[0, 1].axis('off')
+
+ax[0, 2].imshow(threshs_c[2][1][i], cmap='gray')
+ax[0, 2].set_title('c = 45')
+ax[0, 2].axis('off')
+
+ax[1, 0].imshow(threshs_c[3][0][i], cmap='gray')
+ax[1, 0].set_title('c = 100')
+ax[1, 0].axis('off')
+
+ax[1, 1].imshow(threshs_c[4][0][i], cmap='gray')
+ax[1, 1].set_title('c = 1000')
+ax[1, 1].axis('off')
+
+ax[1, 2].imshow(sample_gr[i], cmap='gray')
+ax[1, 2].set_title('raw volume')
+ax[1, 2].axis('off')
 ################################################################################
 #%%
 # find the best beta value

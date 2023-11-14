@@ -45,7 +45,7 @@ def compute_otsu_hist(volume):
     best_thresh = bin_mids[:-1][index_of_max_val]
     return best_thresh
 
-def process_volume(volume, best_thresh, backgr='black'):
+def process_volume(volume, best_thresh, backgr):
     thresholded_vol = cp.zeros(volume.shape)
     if backgr == 'black':
         thresholded_vol[volume >= best_thresh] = 1
@@ -54,13 +54,13 @@ def process_volume(volume, best_thresh, backgr='black'):
     else:
         print('Wrong background input. Choose \'white\' or \'black\'.')
         return 0
+    #thresholded_vol[volume >= best_thresh] = 1
+    return thresholded_vol
     
-    return thresholded_vol.astype(np.uint8)
-    
-def compute_otsu(volume, background='black'):
+def compute_otsu(volume, background):
     volume = cp.asarray(volume)
     best_threshold = compute_otsu_hist(volume)
-    thresholded_volume = process_volume(volume, best_threshold)#, backgr=background)
+    thresholded_volume = process_volume(volume, best_threshold, backgr=background)
     return cp.asnumpy(thresholded_volume), cp.asnumpy(best_threshold)
 
 def adaptive_mean(img_list, w_size, const):

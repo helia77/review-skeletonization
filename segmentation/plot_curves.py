@@ -18,6 +18,7 @@ def plot_pre_recall(predicted, truth,  marker='.', label=''):
         th_range = np.unique(predicted)
     precision   = np.zeros((th_range.size))
     recall      = np.zeros((th_range.size))
+    
     for i, t in enumerate(th_range):
         # global thresholding
         threshed = (predicted >= t)
@@ -38,7 +39,43 @@ def plot_pre_recall(predicted, truth,  marker='.', label=''):
     plt.ylim(-0.01, 1.01)
     plt.plot()
 
-
+def plot_auc_pr(predicteds, truth, var_range, title='', xlabel=''):
+    aucs = []
+    for i, var in enumerate(var_range):
+        print(np.round(var), end=' ')
+        predicted = predicteds[i]
+        # create the thresholds
+        if(np.unique(predicted).size > 1):
+            th_range = np.delete(np.unique(predicted), 0)
+        else:
+            th_range = np.unique(predicted)
+        precision   = np.zeros((th_range.size))
+        recall      = np.zeros((th_range.size))
+        for i, t in enumerate(th_range):
+            # global thresholding
+            threshed = (predicted >= t)
+            met = mt.metric(truth, threshed)
+    
+            precision[i] = met.precision()
+            recall[i] = met.TPR()
+        indices = np.argsort(recall)
+        sorted_recall = recall[indices]
+        sorted_precision = precision[indices]
+        
+        auc = np.trapz(sorted_precision, sorted_recall)
+        print(auc)
+        aucs.append(auc)
+        
+    print('AUC calculations done.')
+    plt.cla()
+    plt.plot(var_range, np.array(aucs), marker='.', label = 'AUC-PR')
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel('AUC-PR')
+    plt.legend(loc='lower left')
+    plt.plot()
+        
+        
 def plot_roc(predicted, truth, marker='.', label=''):
     th_range = np.unique(predicted)
     TPR      = np.zeros((th_range.size))
