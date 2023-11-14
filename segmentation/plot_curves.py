@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import metric as mt
 #%%
 
-def plot_pre_recall(predicted, truth,  marker='.', label=''):
+def plot_pre_recall(predicted, truth,  marker='', label='', color='', flag=True):
     if(np.unique(predicted).size > 1):
         th_range = np.delete(np.unique(predicted), 0)
     else:
@@ -30,13 +30,16 @@ def plot_pre_recall(predicted, truth,  marker='.', label=''):
         if(recall[i] == 1):
             print(i)
 
-    plt.plot(recall, precision, marker=marker, label = label)
+    if(flag):
+        plt.plot(recall, precision, marker=marker, label=label, color=color)
+    else:
+        plt.scatter(recall, precision, marker=marker, label=label, color=color)
     plt.title('Precision-Recall')
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.legend(loc='lower left')
-    plt.xlim(-0.01, 1.01)
-    plt.ylim(-0.01, 1.01)
+    plt.xlim(-0.02, 1.02)
+    plt.ylim(-0.02, 1.02)
     plt.plot()
 
 def plot_auc_pr(predicteds, truth, var_range, title='', xlabel=''):
