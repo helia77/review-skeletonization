@@ -19,25 +19,25 @@ import thresholding as th
 volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
-folder_path = 'C:/Users/helioum/Desktop/region3_helia'
-img_list = md.load_images(folder_path, [0,400], stack=False, crop_size=[400, 1000], grayscale=True, crop_location = [0,0])
+#folder_path = 'C:/Users/helioum/Desktop/region3_helia'
+#img_list = md.load_images(folder_path, [0,400], stack=False, crop_size=[400, 1000], grayscale=True, crop_location = [0,0])
 #%%
-sample_vol = volume[200:300, 0:100, 0:100]
-sample_gr = gr_truth[200:300, 0:100, 0:100]
+sample_vol = volume[200:400, 0:200, 0:100]
+sample_gr = gr_truth[200:400, 0:200, 0:100]
 
 #%%
 start = time.time()
-result = frg.frangi_3D(volume, 0.01, 1, 45, 3, 7, 1, 'white')
+result = frg.frangi_3D(sample_vol, 0.01, 1, 45, 3, 7, 1, 'white')
 print('Frangi filter took: ', time.time() - start)
 
  #%%
 
 # check the metrics
 new_result = np.uint8(result * 255)
-met_frangi = mt.metric(gr_truth, new_result)
-np.save('frangi_result_kesm_a.01b1c45-[3-7-1].npy', result)
-np.save('valid_frangi_kesm_a.01b1c45-[3-7-1].npy', new_result)
-md.numpy_to_nrrd(result, 'frangi_kesm_a.01b1c45-[3-7-1].nrrd')
+met_frangi = mt.metric(sample_gr, new_result)
+#np.save('frangi_result_kesm_a.01b1c45-[3-7-1].npy', result)
+#np.save('valid_frangi_kesm_a.01b1c45-[3-7-1].npy', new_result)
+#md.numpy_to_nrrd(result, 'frangi_kesm_a.01b1c45-[3-7-1].nrrd')
 #%%
 # check to make sure all volumes are from the same section
 fig, ax = plt.subplots(3,1)

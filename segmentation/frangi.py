@@ -132,19 +132,19 @@ def terms_alpha(src, scale, beta, c, back='white'):
                 else:
                     if (l3 == 0):
                         l3 = math.nextafter(0,1)
-                    if (l2 == 0):
-                        l2 = math.nextafter(0,1)
+                    # if (l2 == 0):
+                    #     l2 = math.nextafter(0,1)
                     
                     Ra2 = (l2 / l3)**2
-                    Rb2 = (l1**2)/(l2 * l3)
-                    S2 = (l1**2) + (l2**2) + (l3**2)
+                    # Rb2 = (l1**2)/(l2 * l3)
+                    # S2 = (l1**2) + (l2**2) + (l3**2)
                     
-                    term2 = np.exp(-Rb2 / beta)
-                    term3 = math.exp(-S2 / c)
+                    # term2 = np.exp(-Rb2 / beta)
+                    # term3 = math.exp(-S2 / c)
                     
                     output[z, y, x, 0] = Ra2
-                    output[z, y, x, 1] = term2
-                    output[z, y, x, 2] = (1.0 - term3)
+                    output[z, y, x, 1] = 1#term2
+                    output[z, y, x, 2] = 1#(1.0 - term3)
     print('terms calculation done.')
     return output
     
@@ -165,16 +165,36 @@ def terms_beta(src, scale, alpha, c, back='white'):
                     if (l2 == 0):
                         l2 = math.nextafter(0,1)
                     
-                    Ra2 = (l2 / l3)**2
+                    #Ra2 = (l2 / l3)**2
                     Rb2 = (l1**2)/(l2 * l3)
+                    #S2  = (l1**2) + (l2**2) + (l3**2)
+                    
+                    # term1 = math.exp(-(Ra2) / alpha)
+                    # term3 = math.exp(-S2 / c)
+                    
+                    output[z, y, x, 0] = 1#(1.0 - term1)
+                    output[z, y, x, 1] = Rb2
+                    output[z, y, x, 2] = 1#(1.0 - term3)
+    print('terms calculation done.')
+    return output
+
+def terms_c_only(src, scale, back='white'):
+    lambdas = eigens(src, scale)
+    output = np.zeros(lambdas.shape)
+    for x in range(lambdas.shape[2]):
+        for y in range(lambdas.shape[1]):
+            for z in range(lambdas.shape[0]):
+                l1, l2, l3 = sorted(lambdas[z, y, x], key=abs)
+                if (back=='white' and (l2 < 0 or l3 < 0)):
+                    continue
+                elif(back=='black' and (l2 > 0 or l3 > 0)):
+                    continue
+                else:
                     S2  = (l1**2) + (l2**2) + (l3**2)
                     
-                    term1 = math.exp(-(Ra2) / alpha)
-                    term3 = math.exp(-S2 / c)
-                    
-                    output[z, y, x, 0] = (1.0 - term1)
-                    output[z, y, x, 1] = Rb2
-                    output[z, y, x, 2] = (1.0 - term3)
+                    output[z, y, x, 0] = 1
+                    output[z, y, x, 1] = 1
+                    output[z, y, x, 2] = S2
     print('terms calculation done.')
     return output
 
@@ -207,8 +227,6 @@ def terms_c(src, scale, alpha, beta, back='white'):
                     output[z, y, x, 2] = S2
     print('terms calculation done.')
     return output
-
-
 def vesselnese_alpha(values, alpha):
     output = np.zeros((values.shape[0], values.shape[1], values.shape[2]))    
     
@@ -268,14 +286,14 @@ def highest_pixel(all_filters):
     
     return output_vol
 
-def process_alpha(A, ratios, sample_gr):
+def process_alpha(A, terms, sample_gr):
     alpha = 2 * (A**2)
-    vesselness_1 = vesselnese_alpha(ratios[0], alpha)
-    vesselness_2 = vesselnese_alpha(ratios[1], alpha)
-    vesselness_3 = vesselnese_alpha(ratios[2], alpha)
-    vesselness_4 = vesselnese_alpha(ratios[3], alpha)
-
-    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4]
+    vesselness_1 = vesselnese_alpha(terms[0], alpha)
+    vesselness_2 = vesselnese_alpha(terms[1], alpha)
+    vesselness_3 = vesselnese_alpha(terms[2], alpha)
+    vesselness_4 = vesselnese_alpha(terms[3], alpha)
+    #vesselness_5 = vesselnese_alpha(terms[4], alpha)
+    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4]#, vesselness_5]
 
     output = highest_pixel(all_filters)             # outputed volume for this alpha value
 
@@ -287,14 +305,14 @@ def process_alpha(A, ratios, sample_gr):
     print('.', end='')
     return np.uint8(output), thresh_volume, met_otsu
 
-def process_beta(B, ratios, sample_gr):
+def process_beta(B, terms, sample_gr):
     beta = 2 * (B**2)
-    vesselness_1 = vesselnese_beta(ratios[0], beta)
-    vesselness_2 = vesselnese_beta(ratios[1], beta)
-    vesselness_3 = vesselnese_beta(ratios[2], beta)
-    vesselness_4 = vesselnese_beta(ratios[3], beta)
-
-    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4]
+    vesselness_1 = vesselnese_beta(terms[0], beta)
+    vesselness_2 = vesselnese_beta(terms[1], beta)
+    vesselness_3 = vesselnese_beta(terms[2], beta)
+    vesselness_4 = vesselnese_beta(terms[3], beta)
+    vesselness_5 = vesselnese_beta(terms[4], beta)
+    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4, vesselness_5]
 
     output = highest_pixel(all_filters)
 
@@ -312,8 +330,8 @@ def process_c(C, terms, sample_gr):
     vesselness_2 = vesselnese_c(terms[1], c)
     vesselness_3 = vesselnese_c(terms[2], c)
     vesselness_4 = vesselnese_c(terms[3], c)
-    vesselness_5 = vesselnese_c(terms[4], c)
-    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4, vesselness_5]
+    #vesselness_5 = vesselnese_c(terms[4], c)
+    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4]#, vesselness_5]
 
     output = highest_pixel(all_filters)
 

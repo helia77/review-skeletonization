@@ -11,14 +11,14 @@ import matplotlib.pyplot as plt
 import metric as mt
 #%%
 
-def plot_pre_recall(predicted, truth,  marker='', label='', color='', flag=True):
+def plot_pre_recall(predicted, truth,  marker='', label='', flag=True):
     if(np.unique(predicted).size > 1):
         th_range = np.delete(np.unique(predicted), 0)
     else:
         th_range = np.unique(predicted)
     precision   = np.zeros((th_range.size))
     recall      = np.zeros((th_range.size))
-    
+    print(th_range)
     for i, t in enumerate(th_range):
         # global thresholding
         threshed = (predicted >= t)
@@ -31,9 +31,9 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='', flag=True)
             print(i)
 
     if(flag):
-        plt.plot(recall, precision, marker=marker, label=label, color=color)
+        plt.plot(recall, precision, marker=marker, label=label)
     else:
-        plt.scatter(recall, precision, marker=marker, label=label, color=color)
+        plt.scatter(recall, precision, marker=marker, label=label)
     plt.title('Precision-Recall')
     plt.xlabel('Recall')
     plt.ylabel('Precision')
