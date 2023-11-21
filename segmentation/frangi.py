@@ -311,8 +311,8 @@ def process_beta(B, terms, sample_gr):
     vesselness_2 = vesselnese_beta(terms[1], beta)
     vesselness_3 = vesselnese_beta(terms[2], beta)
     vesselness_4 = vesselnese_beta(terms[3], beta)
-    vesselness_5 = vesselnese_beta(terms[4], beta)
-    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4, vesselness_5]
+    #vesselness_5 = vesselnese_beta(terms[4], beta)
+    all_filters = [vesselness_1, vesselness_2, vesselness_3, vesselness_4]#, vesselness_5]
 
     output = highest_pixel(all_filters)
 
@@ -377,7 +377,7 @@ def vesselness_3D(src, scale, alpha, beta, c, background):
     D *= s3
 
     output = np.zeros((src.shape))
-    print('\neigendecoposition: ...', end=' ')
+    print('eigendecoposition: ...', end=' ')
     start = time.time()
     lambdas = lin.eigvalsh(D)
     print(' Done.')
@@ -395,10 +395,10 @@ def vesselness_3D(src, scale, alpha, beta, c, background):
                     l2 = math.nextafter(0,1)
                 
                 Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large -> use of float128
-                Ra = l2 / l3
+                Ra2 = (l2 / l3)**2
                 S2 = (l1**2) + (l2**2) + (l3**2)
                 
-                term1 = math.exp(-(Ra**2) / alpha)
+                term1 = math.exp(-Ra2 / alpha)
                 term2 = np.exp(-Rb2 / beta)
                 term3 = math.exp(-S2 / c)
                 
@@ -439,7 +439,7 @@ def frangi_3D(src, A, B, C, start, stop, step, background='white'):
                         max_value = vol[z, y, x]
                 output_vol[z, y, x] = max_value
     
-    return output_vol
+    return np.uint8(output_vol * 255)
 
 
 

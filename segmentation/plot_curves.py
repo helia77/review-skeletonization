@@ -16,9 +16,10 @@ def plot_pre_recall(predicted, truth,  marker='', label='', flag=True):
         th_range = np.delete(np.unique(predicted), 0)
     else:
         th_range = np.unique(predicted)
+    #print(th_range)
     precision   = np.zeros((th_range.size))
     recall      = np.zeros((th_range.size))
-    print(th_range)
+    
     for i, t in enumerate(th_range):
         # global thresholding
         threshed = (predicted >= t)
@@ -37,7 +38,7 @@ def plot_pre_recall(predicted, truth,  marker='', label='', flag=True):
     plt.title('Precision-Recall')
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.legend(loc='lower left')
+    plt.legend(loc='upper right')
     plt.xlim(-0.02, 1.02)
     plt.ylim(-0.02, 1.02)
     plt.plot()
