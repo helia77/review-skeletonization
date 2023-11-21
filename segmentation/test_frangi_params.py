@@ -61,7 +61,7 @@ pltc.plot_pre_recall(threshs_c[0][0], sample_gr, marker='.', label='c='+str(c_ra
 frangis = [threshs_c[i][0] for i in range(len(threshs_c))]
 pltc.plot_auc_pr(frangis, sample_gr, c_range)
 #%%
-i = 50
+i = 30
 fig, ax = plt.subplots(2, 3)
 fig.suptitle('c param - Image ' + str(i))
 ax[0, 0].imshow(threshs_c[0][0][i], cmap='gray')
@@ -193,5 +193,42 @@ ax[1, 2].axis('off')
 frangi_filtered = frg.frangi_3D(sample_vol, 5, 0.1, 50.5, 3, 7, 1, 'white')
 #%%
 met_frani = mt.metric(sample_gr, frangi_filtered)
-otsu_output = cp_th.compute_otsu(frangi_filtered, 'black')
+otsu_output, _ = cp_th.compute_otsu(frangi_filtered, 'black')
 met_otsu = mt.metric(sample_gr, otsu_output)
+otsu_output_img, _ = cp_th.compute_otsu_img(frangi_filtered, 'black')
+met_otsu_img = mt.metric(sample_gr, otsu_output_img)
+otsu_img, _ = cp_th.compute_otsu_img(sample_vol, 'white')
+met_img = mt.metric(sample_gr, otsu_img)
+otsu_vol, _ = cp_th.compute_otsu(sample_vol, 'white')
+met_vol = mt.metric(sample_gr, otsu_vol)
+print('frangi only: ', met_frani.jaccard(), met_frani.dice())
+print('frangi+otsu vol: ', met_otsu.jaccard(), met_otsu.dice())
+print('frangi+otsu img: ', met_otsu_img.jaccard(), met_otsu_img.dice())
+print('otsu volume: ', met_vol.jaccard(), met_vol.dice())
+print('otsu img: ', met_img.jaccard(), met_img.dice())
+#%%
+i = 80
+fig, ax = plt.subplots(2, 3)
+ax[0, 0].imshow(frangi_filtered[i], cmap='gray')
+ax[0, 0].set_title('frangi')
+ax[0, 0].axis('off')
+
+ax[0, 1].imshow(otsu_output[i], cmap='gray')
+ax[0, 1].set_title('frangi+otsu')
+ax[0, 1].axis('off')
+
+ax[0, 2].imshow(otsu_vol[i], cmap='gray')
+ax[0, 2].set_title('otsu vol')
+ax[0, 2].axis('off')
+
+ax[1, 0].imshow(otsu_img[i], cmap='gray')
+ax[1, 0].set_title('otsu img')
+ax[1, 0].axis('off')
+
+ax[1, 1].imshow(sample_vol[i], cmap='gray')
+ax[1, 1].set_title('vol')
+ax[1, 1].axis('off')
+
+ax[1, 2].imshow(sample_gr[i], cmap='gray')
+ax[1, 2].set_title('ground')
+ax[1, 2].axis('off')

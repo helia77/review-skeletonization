@@ -10,6 +10,7 @@ In this code, image format as (z, y, x, RGB) has been used - if RGB values exist
 import numpy as np
 import cv2
 import cupy as cp
+import thresholding as th
 
 #%%
 # Based on the code from Wikipedia
@@ -62,6 +63,19 @@ def compute_otsu(volume, background):
     best_threshold = compute_otsu_hist(volume)
     thresholded_volume = process_volume(volume, best_threshold, backgr=background)
     return cp.asnumpy(thresholded_volume), cp.asnumpy(best_threshold)
+
+def compute_otsu_img(volume, background):
+    
+    thresh_img = []
+    mean = 0
+    for i in range(volume.shape[0]):
+        img = volume[i]
+        thresh, test = th.compute_otsu(img, background=background)
+        mean += test
+        thresh_img.append(thresh)
+    thresh_images = np.stack(thresh_img, axis=0)
+    mean /= volume.shape[0]
+    return thresh_images, mean
 
 def adaptive_mean(img_list, w_size, const):
     thresh_img = []

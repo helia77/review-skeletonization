@@ -95,6 +95,27 @@ def frangi_2D(src, B, C, start, stop, step):
     
     return output_img
         
+
+def max_norm(src, scale):
+    # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
+    D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
+    
+    filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), D[:, :, :, 2,2])
+    filters.gaussian_filter(src, (scale, scale, scale), (0, 1, 1), D[:, :, :, 1,2])
+    filters.gaussian_filter(src, (scale, scale, scale), (0, 2, 0), D[:, :, :, 1,1])
+    filters.gaussian_filter(src, (scale, scale, scale), (2, 0, 0), D[:, :, :, 0,0])
+    filters.gaussian_filter(src, (scale, scale, scale), (1, 0, 1), D[:, :, :, 0,2])
+    filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), D[:, :, :, 0,1])
+    
+    D[:, :, :, 2,1] = D[:, :, :, 1,2]
+    D[:, :, :, 1,0] = D[:, :, :, 0,1]
+    D[:, :, :, 2,0] = D[:, :, :, 0,2]
+
+    # find norm
+    norm = lin.norm(D)
+    max_norm = np.max(norm)
+    
+    return max_norm
 def eigens(src, scale):
     # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
     D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
@@ -298,7 +319,7 @@ def process_alpha(A, terms, sample_gr):
     output = highest_pixel(all_filters)             # outputed volume for this alpha value
 
     # apply otsu's threshold
-    thresh_volume, best_thresh = cp_th.compute_otsu(output,  background='black')
+    thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
     
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
@@ -317,7 +338,7 @@ def process_beta(B, terms, sample_gr):
     output = highest_pixel(all_filters)
 
     # apply otsu's threshold
-    thresh_volume, best_thresh = cp_th.compute_otsu(output,  background='black')
+    thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
     
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
@@ -337,7 +358,7 @@ def process_c(C, terms, sample_gr):
 
     # apply otsu's threshold
     # after Frangi's filter, the background is black
-    thresh_volume, best_thresh = cp_th.compute_otsu(output,  background='black')
+    thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
     
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
@@ -352,22 +373,22 @@ def vesselness_3D(src, scale, alpha, beta, c, background):
     
     start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), D[:, :, :, 2,2])
-    print('1st done: ', time.time() - start, ' seconds')
+    #print('1st done: ', time.time() - start, ' seconds')
     start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (0, 1, 1), D[:, :, :, 1,2])
-    print('2nd done: ', time.time() - start, ' seconds')
+    #print('2nd done: ', time.time() - start, ' seconds')
     start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (0, 2, 0), D[:, :, :, 1,1])
-    print('3rd done: ', time.time() - start, ' seconds')
+    #print('3rd done: ', time.time() - start, ' seconds')
     start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (2, 0, 0), D[:, :, :, 0,0])
-    print('4th done: ', time.time() - start, ' seconds')
+    #print('4th done: ', time.time() - start, ' seconds')
     start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (1, 0, 1), D[:, :, :, 0,2])
-    print('5th done: ', time.time() - start, ' seconds')
+    #print('5th done: ', time.time() - start, ' seconds')
     start = time.time()
     filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), D[:, :, :, 0,1])
-    print('6th done: ', time.time() - start, ' seconds')
+    #print('6th done: ', time.time() - start, ' seconds')
     
     D[:, :, :, 2,1] = D[:, :, :, 1,2]
     D[:, :, :, 1,0] = D[:, :, :, 0,1]
