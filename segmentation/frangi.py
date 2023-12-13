@@ -98,24 +98,30 @@ def frangi_2D(src, B, C, start, stop, step):
 
 def max_norm(src, scale):
     # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
-    D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
+    max_norm_all = 0.0
+    src = src/255
+    for s in scale:
+        D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
+        
+        filters.gaussian_filter(src, (s, s, s), (0, 0, 2), D[:, :, :, 2,2])
+        filters.gaussian_filter(src, (s, s, s), (0, 1, 1), D[:, :, :, 1,2])
+        filters.gaussian_filter(src, (s, s, s), (0, 2, 0), D[:, :, :, 1,1])
+        filters.gaussian_filter(src, (s, s, s), (2, 0, 0), D[:, :, :, 0,0])
+        filters.gaussian_filter(src, (s, s, s), (1, 0, 1), D[:, :, :, 0,2])
+        filters.gaussian_filter(src, (s, s, s), (1, 1, 0), D[:, :, :, 0,1])
+        
+        D[:, :, :, 2,1] = D[:, :, :, 1,2]
+        D[:, :, :, 1,0] = D[:, :, :, 0,1]
+        D[:, :, :, 2,0] = D[:, :, :, 0,2]
     
-    filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), D[:, :, :, 2,2])
-    filters.gaussian_filter(src, (scale, scale, scale), (0, 1, 1), D[:, :, :, 1,2])
-    filters.gaussian_filter(src, (scale, scale, scale), (0, 2, 0), D[:, :, :, 1,1])
-    filters.gaussian_filter(src, (scale, scale, scale), (2, 0, 0), D[:, :, :, 0,0])
-    filters.gaussian_filter(src, (scale, scale, scale), (1, 0, 1), D[:, :, :, 0,2])
-    filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), D[:, :, :, 0,1])
+        # find norm
+        norm = lin.norm(D*s*s*s)
+        max_norm = np.max(norm)
+        if max_norm > max_norm_all:
+            max_norm_all = max_norm
     
-    D[:, :, :, 2,1] = D[:, :, :, 1,2]
-    D[:, :, :, 1,0] = D[:, :, :, 0,1]
-    D[:, :, :, 2,0] = D[:, :, :, 0,2]
+    return max_norm_all
 
-    # find norm
-    norm = lin.norm(D)
-    max_norm = np.max(norm)
-    
-    return max_norm
 def eigens(src, scale):
     # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
     D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
@@ -153,19 +159,19 @@ def terms_alpha(src, scale, beta, c, back='white'):
                 else:
                     if (l3 == 0):
                         l3 = math.nextafter(0,1)
-                    # if (l2 == 0):
-                    #     l2 = math.nextafter(0,1)
+                    if (l2 == 0):
+                         l2 = math.nextafter(0,1)
                     
                     Ra2 = (l2 / l3)**2
-                    # Rb2 = (l1**2)/(l2 * l3)
-                    # S2 = (l1**2) + (l2**2) + (l3**2)
+                    Rb2 = (l1**2)/(l2 * l3)
+                    S2 = (l1**2) + (l2**2) + (l3**2)
                     
-                    # term2 = np.exp(-Rb2 / beta)
-                    # term3 = math.exp(-S2 / c)
+                    term2 = np.exp(-Rb2 / beta)
+                    term3 = math.exp(-S2 / c)
                     
                     output[z, y, x, 0] = Ra2
-                    output[z, y, x, 1] = 1#term2
-                    output[z, y, x, 2] = 1#(1.0 - term3)
+                    output[z, y, x, 1] = term2
+                    output[z, y, x, 2] = (1.0 - term3)
     print('terms calculation done.')
     return output
     
@@ -186,16 +192,16 @@ def terms_beta(src, scale, alpha, c, back='white'):
                     if (l2 == 0):
                         l2 = math.nextafter(0,1)
                     
-                    #Ra2 = (l2 / l3)**2
+                    Ra2 = (l2 / l3)**2
                     Rb2 = (l1**2)/(l2 * l3)
-                    #S2  = (l1**2) + (l2**2) + (l3**2)
+                    S2  = (l1**2) + (l2**2) + (l3**2)
                     
-                    # term1 = math.exp(-(Ra2) / alpha)
-                    # term3 = math.exp(-S2 / c)
+                    term1 = math.exp(-(Ra2) / alpha)
+                    term3 = math.exp(-S2 / c)
                     
-                    output[z, y, x, 0] = 1#(1.0 - term1)
+                    output[z, y, x, 0] = (1.0 - term1)
                     output[z, y, x, 1] = Rb2
-                    output[z, y, x, 2] = 1#(1.0 - term3)
+                    output[z, y, x, 2] = (1.0 - term3)
     print('terms calculation done.')
     return output
 
@@ -359,7 +365,7 @@ def process_c(C, terms, sample_gr):
     # apply otsu's threshold
     # after Frangi's filter, the background is black
     thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
-    
+    print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
     print('.', end='')

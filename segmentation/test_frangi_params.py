@@ -18,38 +18,46 @@ import plot_curves as pltc
 volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
-sample_vol = volume[200:400, 0:200, 100:200]
-sample_gr = gr_truth[200:400, 0:200, 100:200]
+sample_vol = volume[300:400, 0:100, 100:200]
+sample_gr = gr_truth[300:400, 0:100, 100:200]
 #%%
 # preprocess the terms in vesselness function based on two parameters only - later change the other parameter
-start = time.time()
-scale = [3, 4, 5, 6]
-beta = 2 * (1*1)
-c = 2 * 45 * 45
-alpha = 2 * (1 * 1)
+
+scale  = [3, 4, 5, 6]
+alpha  = 2 * (0.5 * 0.5)
+beta   = 2 * (0.5 * 0.5)
+
+half_norm = frg.max_norm(sample_vol, scale) / 2
+c = 2 * half_norm * half_norm
 start = time.time()
 
 alpha_terms = [frg.terms_alpha(sample_vol, s, beta, c) for s in scale]
 beta_terms  = [frg.terms_beta(sample_vol, s, alpha, c) for s in scale]
-c_terms     = [frg.terms_c_only(sample_vol, s) for s in scale]
+c_terms     = [frg.terms_c(sample_vol, s, alpha, beta) for s in scale]
 
 print(f"Calculating terms took {time.time() - start} seconds")
     
 #%%
 # find the best c value
-#c_range = [50]
-c_range = np.linspace(1, 100, 5)
+c = half_norm
+c_range = [c-10, c, c+10, c+30, c+50]#np.linspace(1, 100, 5)
 start = time.time()
 threshs_c = [frg.process_c(C, c_terms, sample_gr) for C in c_range]
 print(f"\ntook {time.time() - start} seconds")
 c_range = np.array(c_range)
 
 #%%
-met_frani_jac = [mt.metric(sample_gr, threshs_c[i][0]).jaccard() for i in range(len(c_range))]
-met_frani_dice = [mt.metric(sample_gr, threshs_c[i][0]).dice() for i in range(len(c_range))]
+met_frangi_jac = [mt.metric(sample_gr, threshs_c[i][0]).jaccard() for i in range(len(c_range))]
+met_frangi_dice = [mt.metric(sample_gr, threshs_c[i][0]).dice() for i in range(len(c_range))]
 met_otsu_jac = [threshs_c[i][2].jaccard() for i in range(len(c_range))]
 met_otsu_dice = [threshs_c[i][2].dice() for i in range(len(c_range))]
 #%%
+threshed = (threshs_c[0][0] >= 65.005)
+met = mt.metric(sample_gr, threshed)
+
+precision = met.precision()
+recall = met.TPR()
+
 plt.figure(1)
 plt.grid()
 pltc.plot_pre_recall(threshs_c[4][0], sample_gr, marker='>', label='c='+str(c_range[4]))
@@ -57,6 +65,7 @@ pltc.plot_pre_recall(threshs_c[3][0], sample_gr, marker='x', label='c='+str(c_ra
 pltc.plot_pre_recall(threshs_c[2][0], sample_gr, marker=',', label='c='+str(c_range[2]))
 pltc.plot_pre_recall(threshs_c[1][0], sample_gr, label='c='+str(c_range[1]))
 pltc.plot_pre_recall(threshs_c[0][0], sample_gr, marker='.', label='c='+str(c_range[0]))
+plt.plot(recall, precision, color='r', marker='o', label='Otsu+Frangi')
 #%%
 frangis = [threshs_c[i][0] for i in range(len(threshs_c))]
 pltc.plot_auc_pr(frangis, sample_gr, c_range)
@@ -90,7 +99,8 @@ ax[1, 2].axis('off')
 ################################################################################
 #%%
 # find the best beta value
-beta_range = [0.001, 0.01, 0.1, 1, 100]
+b = 0.5
+beta_range = [b/100, b/10, b, b*10, b*100]
 start = time.time()
 threshs_beta = [frg.process_beta(B, beta_terms, sample_gr) for B in beta_range]
 print(f"\ntook {time.time() - start} seconds")

@@ -61,4 +61,17 @@ def numpy_to_nrrd(arr, filename):
     # convertin numpy array to nrrd file
     nrrd.write(filename, arr)
     
-    
+#%%
+# convert numpy to obj file
+def numpy_to_obj(vertices, edges, f, offset):
+    f.write("# new line\n")
+    for v in vertices:
+        if(len(v) == 3):
+            f.write(f"v {v[0]} {v[1]} {v[2]}\n")
+        if(len(v) == 2):
+            f.write(f"v {v[0]} {v[1]} {'0'}\n")
+        
+    f.write("l ") 
+    for e in edges:
+        f.write(f"{e+offset} ")
+    f.write("\n")

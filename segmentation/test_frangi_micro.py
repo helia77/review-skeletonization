@@ -27,14 +27,14 @@ c = 2 * 25 * 25
 alpha = 2 * (0.48 * 0.48)
 start = time.time()
 
-alpha_terms = [frg.terms_alpha(sample_vol, s, beta, c, 'black') for s in scale]
-beta_terms  = [frg.terms_beta(sample_vol, s, alpha, c, 'black') for s in scale]
+#alpha_terms = [frg.terms_alpha(sample_vol, s, beta, c, 'black') for s in scale]
+#beta_terms  = [frg.terms_beta(sample_vol, s, alpha, c, 'black') for s in scale]
 #c_terms      = [frg.terms_c(sample_vol, s, alpha, beta, 'black') for s in scale]
 c_temrs_only = [frg.terms_c_only(sample_vol, s, 'black') for s in scale]
 print(f"Calculating terms took {time.time() - start} seconds")
 #%%
 #c_range = [1, 25, 50, 100, 1000]
-c_range = np.linspace(1, 100, 5)
+c_range = [25.75]#np.linspace(1, 100, 5)
 start = time.time()
 #threshs_c      = [frg.process_c(C, c_terms, sample_gr) for C in c_range]
 threshs_c_only = [frg.process_c(C, c_temrs_only, sample_gr) for C in c_range]
@@ -47,13 +47,24 @@ cmet_otsu_jac = [threshs_c_only[i][2].jaccard() for i in range(len(c_range))]
 cmet_otsu_dice = [threshs_c_only[i][2].dice() for i in range(len(c_range))]
 
 #%%
+threshed = (threshs_c_only[0][0] >= 105.905)
+met = mt.metric(sample_gr, threshed)
+
+precision = met.precision()
+recall = met.TPR()
+
 plt.figure(1)
 plt.grid()
-pltc.plot_pre_recall(threshs_c_only[0][0], sample_gr, marker= '>', label='1', color='#E49515', flag=True)
-pltc.plot_pre_recall(threshs_c_only[1][0], sample_gr, label='25', color='#8503A9', flag=True)
-pltc.plot_pre_recall(threshs_c_only[2][0], sample_gr, marker= '.', label='50', color='#0AA049', flag=True)
-pltc.plot_pre_recall(threshs_c_only[3][0], sample_gr, marker= ',', label='100', color='#AF0731', flag=True)
-pltc.plot_pre_recall(threshs_c_only[4][0], sample_gr, marker= 'o', label='1000', color='#1969AF', flag=False)
+pltc.plot_pre_recall(threshs_c_only[0][0], sample_gr, marker= '.', label='c=25.75', color='#E49515', flag=True)
+# pltc.plot_pre_recall(threshs_c_only[1][0], sample_gr, label='25', color='#8503A9', flag=True)
+# pltc.plot_pre_recall(threshs_c_only[2][0], sample_gr, marker= '.', label='50', color='#0AA049', flag=True)
+# pltc.plot_pre_recall(threshs_c_only[3][0], sample_gr, marker= ',', label='100', color='#AF0731', flag=True)
+# pltc.plot_pre_recall(threshs_c_only[4][0], sample_gr, marker= 'o', label='1000', color='#1969AF', flag=False)
+plt.plot(recall, precision, color='r', marker='o', label='Otsu+Frangi')
+#%%
+import manage_data  as md
+md.numpy_to_nrrd(threshs_c_only[0][0], 'frangi_micro.nrrd')
+md.numpy_to_nrrd(threshs_c_only[0][1], 'frangi_otsu_micro.nrrd')
 #%%
 i = 100
 fig, ax = plt.subplots(2, 4)
