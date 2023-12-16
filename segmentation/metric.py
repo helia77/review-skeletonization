@@ -51,5 +51,6 @@ class metric:
     def jaccard(self):
         return self.TP / float(self.TP + self.FP + self.FN)
     
+    # aka F1 score (harmonic mean of precision and recall)
     def dice(self):
         return (2*self.TP) / float(2*self.TP + self.FP + self.FN)

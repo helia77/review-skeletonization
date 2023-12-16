@@ -14,14 +14,14 @@ from skimage import measure
 volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
-sample_vol = gr_truth[237:344, 268:380, 480:600]
+sample_vol = volume[237:344, 268:380, 480:600]
 
 #%%
 md.numpy_to_nrrd(sample_vol, 'small_kesm.nrrd')
 
 #%%
 sample_vol = np.squeeze(sample_vol)
-T_blur = sp.ndimage.gaussian_filter(sample_vol *255, [1, 1, 1])
+T_blur = sp.ndimage.gaussian_filter(sample_vol, [1, 1, 1])
 
 #marching cubes
 verts, faces, _, _ = measure.marching_cubes(T_blur)

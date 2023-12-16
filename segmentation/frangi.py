@@ -175,6 +175,29 @@ def terms_alpha(src, scale, beta, c, back='white'):
     print('terms calculation done.')
     return output
     
+def terms_alpha_only(src, scale, back='white'):
+    lambdas = eigens(src, scale)
+    output = np.zeros(lambdas.shape)
+    for x in range(lambdas.shape[2]):
+        for y in range(lambdas.shape[1]):
+            for z in range(lambdas.shape[0]):
+                l1, l2, l3 = sorted(lambdas[z, y, x], key=abs)
+                if (back=='white' and (l2 < 0 or l3 < 0)):
+                    continue
+                elif(back=='black' and (l2 > 0 or l3 > 0)):
+                    continue
+                else:
+                    if (l3 == 0):
+                        l3 = math.nextafter(0,1)
+                    
+                    Ra2 = (l2 / l3)**2
+                    
+                    output[z, y, x, 0] = Ra2
+                    output[z, y, x, 1] = 1
+                    output[z, y, x, 2] = 1
+    print('terms calculation done.')
+    return output
+
 def terms_beta(src, scale, alpha, c, back='white'):
     lambdas = eigens(src, scale)
     output = np.zeros(lambdas.shape)
@@ -202,6 +225,31 @@ def terms_beta(src, scale, alpha, c, back='white'):
                     output[z, y, x, 0] = (1.0 - term1)
                     output[z, y, x, 1] = Rb2
                     output[z, y, x, 2] = (1.0 - term3)
+    print('terms calculation done.')
+    return output
+
+def terms_beta_only(src, scale, back='white'):
+    lambdas = eigens(src, scale)
+    output = np.zeros(lambdas.shape)
+    for x in range(lambdas.shape[2]):
+        for y in range(lambdas.shape[1]):
+            for z in range(lambdas.shape[0]):
+                l1, l2, l3 = sorted(lambdas[z, y, x], key=abs)
+                if (back=='white' and (l2 < 0 or l3 < 0)):
+                    continue
+                elif(back=='black' and (l2 > 0 or l3 > 0)):
+                    continue
+                else:
+                    if (l3 == 0):
+                        l3 = math.nextafter(0,1)
+                    if (l2 == 0):
+                        l2 = math.nextafter(0,1)
+                    
+                    Rb2 = (l1**2)/(l2 * l3)
+                    
+                    output[z, y, x, 0] = 1
+                    output[z, y, x, 1] = Rb2
+                    output[z, y, x, 2] = 1
     print('terms calculation done.')
     return output
 
@@ -326,10 +374,10 @@ def process_alpha(A, terms, sample_gr):
 
     # apply otsu's threshold
     thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
-    
+    print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
-    print('.', end='')
+    #print('.', end='')
     return np.uint8(output), thresh_volume, met_otsu
 
 def process_beta(B, terms, sample_gr):
@@ -345,10 +393,10 @@ def process_beta(B, terms, sample_gr):
 
     # apply otsu's threshold
     thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
-    
+    print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
-    print('.', end='')
+    #print('.', end='')
     return np.uint8(output), thresh_volume, met_otsu
 
 def process_c(C, terms, sample_gr):
@@ -368,7 +416,7 @@ def process_c(C, terms, sample_gr):
     print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
-    print('.', end='')
+    #print('.', end='')
     return output, thresh_volume, met_otsu
 
 def vesselness_3D(src, scale, alpha, beta, c, background):

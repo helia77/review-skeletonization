@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import metric as mt
 #%%
 
-def plot_pre_recall(predicted, truth,  marker='', label='', color='b', flag=True):
+def plot_pre_recall(predicted, truth,  marker='', label='', color='b', title='', scatter=False):
     if(np.unique(predicted).size > 1):
         th_range = np.delete(np.unique(predicted), 0)
     else:
@@ -29,16 +29,16 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', flag=True
         recall[i] = met.TPR()
         
         if(recall[i] == 1):
-            print(i)
+            print('recall is 1 at threhsold:', i)
 
-    if(flag):
-        plt.plot(recall, precision, marker=marker, color=color, label=label)
-    else:
+    if(scatter):
         plt.scatter(recall, precision, marker=marker, color=color, label=label)
-    plt.title('Precision-Recall')
+    else:
+        plt.plot(recall, precision, marker=marker, color=color, label=label)
+    plt.title(title)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
     plt.xlim(-0.02, 1.02)
     plt.ylim(-0.02, 1.02)
     plt.plot()
@@ -46,7 +46,7 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', flag=True
 def plot_auc_pr(predicteds, truth, var_range, title='', xlabel=''):
     aucs = []
     for i, var in enumerate(var_range):
-        print(np.round(var), end=' ')
+        print(np.round(var, 3), end=':\t\t')
         predicted = predicteds[i]
         # create the thresholds
         if(np.unique(predicted).size > 1):
@@ -67,16 +67,16 @@ def plot_auc_pr(predicteds, truth, var_range, title='', xlabel=''):
         sorted_precision = precision[indices]
         
         auc = np.trapz(sorted_precision, sorted_recall)
-        print(auc)
+        print('AUC: ', np.round(auc))
         aucs.append(auc)
         
-    print('AUC calculations done.')
-    plt.cla()
+    print('AUC calculations done.\n')
+    #plt.cla()
     plt.plot(var_range, np.array(aucs), marker='.', label = 'AUC-PR')
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel('AUC-PR')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower right')
     plt.plot()
         
         
