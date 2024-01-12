@@ -67,7 +67,7 @@ def beyond_frangi_filter(src, scale_range, tau, background):
         
         del Hxx, Hyy, Hzz, Hxy, Hxz, Hzy
         
-        # we only be needing lambda2 and lambda3
+        # eigendecomposition
         lambdas = lin.eigvalsh(H)
         
         idx = np.argwhere(T == 1)
@@ -81,25 +81,26 @@ def beyond_frangi_filter(src, scale_range, tau, background):
         max_l3 = np.max(lambdas[:, :, :, 2])  
         for arg in idx:
             i, j, k = arg
-            _, l2, l3 = sorted(lambdas[i, j, k], key=abs)
+            _, l2, l3 = lambdas[i, j, k]
+            
             if background == 'black':
                 l2 = -l2
                 l3 = -l3
         
             # calculating lambda rho
             reg_term = tau * max_l3            # regularized term
+            l_rho = l3
             if l3 > 0 and l3 < reg_term:
                 l_rho = reg_term
             elif l3 <= 0:
                 l_rho = 0
-            else:
-                l_rho = l3
-            
+                
             # modified vesselness function
+            V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
             if l2 >= (l_rho/2) and l_rho > 0:
                 V0[i, j, k] = 1
-            elif l2 <= (l_rho/2):
-                V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
+            elif l2 <= 0 or l_rho <= 0:
+                V0[i, j, k] = 0
             
         all_filters.append(V0)
     
