@@ -142,7 +142,7 @@ def eigens(src, scale):
     D *= s3
 
     lambdas = lin.eigvalsh(D)
-    print('Eigen Done.')
+    #sprint('Eigen Done.')
     return lambdas
 
 def terms_alpha(src, scale, beta, c, back='white'):

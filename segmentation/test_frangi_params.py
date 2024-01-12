@@ -121,6 +121,7 @@ for param in [[threshs_c, threshs_c_only, c_range, 'c'], [threshs_beta, threshs_
     pltc.plot_pre_recall(param[1][0][0], sample_gr, label=f'{param[3]}='+str(param[2][0]), color='#de0000', title=title)
     plt.scatter(recall, precision, color='g', marker='o', label='Otsu')
     plt.legend(loc='lower left')
+    
 #%%
 # calcualte the Area Under the Curve (AUC) of precision-recall curve for each parameter (refer to titles and their x-axis)
 gr_truth_1d = np.ravel(sample_gr)
@@ -142,7 +143,7 @@ for param in [[threshs_c, threshs_c_only, c_range, 'c'], [threshs_beta, threshs_
     plt.sca(axs[0])
     frangis = [param[0][i][0] for i in range(len(param[0]))]
     plt.grid()
-    pltc.plot_auc_pr(frangis, sample_gr, param[2], ' all params', f'{param[3]} range')
+    pltc.plot_auc_pr(frangis, sample_gr, param[2], f'{param[3]} + all params', f'{param[3]} range')
     
     plt.suptitle('AUC curve', fontsize=16)
     plt.sca(axs[1])
