@@ -17,8 +17,8 @@ volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
 # the cropped sizes can be changed
-sample_vol = volume[300:400, 0:100, 100:200]
-sample_gr = gr_truth[300:400, 0:100, 100:200]
+sample_vol = volume[350:400, 50:100, 150:200]
+sample_gr = gr_truth[350:400, 50:100, 150:200]
 
 #%%
 # params = A, B, C
