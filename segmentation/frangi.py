@@ -574,23 +574,24 @@ def beyond_frangi_filter(src, scale_range, tau, background):
         
         idx = np.argwhere(T == 1)
         
-        V0 = np.zeros_like(src)
+        V0 = np.zeros_like(src, dtype=np.float64)
         for arg in idx:
             # sort the eigenvalues
             i, j, k = arg
             lambdas[i, j, k] = sorted(lambdas[i, j, k], key=abs)
-            
+        
+        # find the maximum lambda3 across the volume with scale s
         max_l3 = np.max(lambdas[:, :, :, 2])  
         for arg in idx:
             i, j, k = arg
-            _, l2, l3 = lambdas[i, j, k]
+            _, l2, l3 = lambdas[i, j, k]        # no need for lambda1
             
             if background == 'black':
                 l2 = -l2
                 l3 = -l3
         
             # calculating lambda rho
-            reg_term = tau * max_l3            # regularized term
+            reg_term = tau * max_l3             # regularized term
             l_rho = l3
             if l3 > 0 and l3 < reg_term:
                 l_rho = reg_term
@@ -598,16 +599,19 @@ def beyond_frangi_filter(src, scale_range, tau, background):
                 l_rho = 0
                 
             # modified vesselness function
-            V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
+            #V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
             if l2 >= (l_rho/2) and l_rho > 0:
                 V0[i, j, k] = 1
             elif l2 <= 0 or l_rho <= 0:
                 V0[i, j, k] = 0
-            
-        all_filters.append(V0)
+            else:
+                V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
+                #print(V0[i, j, k])
+
+        all_filters.append(np.uint8(V0 * 255))
     
     # pick the highest vesselness values
-    response = frangi.highest_pixel(all_filters)
+    response = highest_pixel(all_filters)
     return response
 
 
