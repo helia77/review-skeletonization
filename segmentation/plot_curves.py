@@ -34,7 +34,9 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', title='',
     if(scatter):
         plt.scatter(recall, precision, marker=marker, color=color, label=label)
     else:
+        idxmin = np.argwhere(precision == min(precision))
         plt.plot(recall, precision, marker=marker, color=color, label=label)
+        plt.scatter(recall[idxmin], precision[idxmin], marker='x', c='red')
     plt.title(title)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
