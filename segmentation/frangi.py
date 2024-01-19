@@ -349,7 +349,7 @@ def vesselnese_c(values, c):
 
 def highest_pixel(all_filters):
     max_vol = all_filters[0]
-    output_vol = np.zeros(max_vol.shape, dtype=np.uint8)
+    output_vol = np.zeros(max_vol.shape)
     for x in range(max_vol.shape[2]):
         for y in range(max_vol.shape[1]):
             for z in range(max_vol.shape[0]):
@@ -487,16 +487,112 @@ def vesselness_3D(src, scale, alpha, beta, c, background):
             
     return output
 
-def frangi_3D(src, A, B, C, start, stop, step, background='white'):
+
+def upgrade_vesselness(src, A, B, C, scale_range, background):
     all_filters = []
     
     beta  = 2 * (B**2)
     c     = 2 * (C**2)
     alpha = 2 * (A**2)
-    scale_range = np.arange(start, stop, step)
+    for scale in scale_range:
+        # convolving image with Gaussian derivatives - including Hxx, Hxy, Hyy
+        Hxx = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
+        Hyy = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
+        Hzz = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
+        Hxy = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
+        Hxz = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
+        Hzy = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
+        
+        filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), Hxx)
+        filters.gaussian_filter(src, (scale, scale, scale), (0, 1, 1), Hxy)
+        filters.gaussian_filter(src, (scale, scale, scale), (0, 2, 0), Hyy)
+        filters.gaussian_filter(src, (scale, scale, scale), (2, 0, 0), Hzz)
+        filters.gaussian_filter(src, (scale, scale, scale), (1, 0, 1), Hxz)
+        filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), Hzy)
+        
+        # correct for scaling - normalization
+        s3 = scale * scale * scale
+        Hxx *= s3; Hyy *= s3; Hzz *= s3
+        Hxy *= s3; Hxz *= s3; Hzy *= s3
+        
+        # reduce computation by computing vesselness only where needed
+        B1 = -(Hxx + Hyy + Hzz)
+        B2 = (Hxx * Hyy) + (Hxx * Hzz) + (Hyy * Hzz) - (Hxy * Hxy) - (Hxz * Hxz) - (Hzy * Hzy)
+        B3 = (Hxx * Hzy * Hzy) + (Hxy * Hxy * Hzz) + (Hxz * Hyy * Hxz) - (Hxx * Hyy * Hzz) - (Hxy * Hzy * Hxz) - (Hxz * Hxy * Hzy)
+        
+        T = np.ones_like(B1, dtype=np.uint8)
+            
+        if background == 'black':
+            T[B1 <= 0] = 0
+            T[(B2 <= 0) & (B3 == 0)] = 0
+            T[(B1 > 0) & (B3 > 0) & (B1*B2 < B3)] = 0
+        else:
+            T[B1 >= 0] = 0
+            T[(B2 >= 0) & (B3 == 0)] = 0
+            T[(B1 < 0) & (B2 < 0) & ((-B1)*(-B2) < (-B3))] = 0
+        
+        del B1, B2, B3
+        Hxx *= T; Hyy *= T; Hzz *= T
+        Hxy *= T; Hxz *= T; Hzy *= T
+        
+        H = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3, 3))
+        H[:, :, :, 2, 2] = Hxx;     H[:, :, :, 1, 1] = Hyy;     H[:, :, :, 0, 0] = Hzz;
+        H[:, :, :, 1, 2] = Hxy;     H[:, :, :, 0, 2] = Hxz;     H[:, :, :, 0, 1] = Hzy;
+        H[:, :, :, 2, 1] = Hxy;     H[:, :, :, 2, 0] = Hxz;     H[:, :, :, 1, 0] = Hzy;
+        
+        del Hxx, Hyy, Hzz, Hxy, Hxz, Hzy
+        
+        # eigendecomposition
+        lambdas = lin.eigvalsh(H)
+        
+        idx = np.argwhere(T == 1)
+        
+        V0 = np.zeros_like(src, dtype=np.float64)
+            
+        for arg in idx:
+            i, j, k = arg
+            l1, l2, l3 = sorted(lambdas[i, j, k], key=abs)
+            
+            if background == 'white' and (l2 < 0 or l3 < 0):
+                continue
+            elif background == 'black' and (l2 > 0 or l3 > 0):
+                continue
+            
+            if (l3 == 0):
+                l3 = math.nextafter(0,1)
+            if (l2 == 0):
+                l2 = math.nextafter(0,1)
+            
+            Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large -> use of float128
+            Ra2 = (l2 / l3)**2
+            S2 = (l1**2) + (l2**2) + (l3**2)
+            
+            term1 = math.exp(-Ra2 / alpha)
+            term2 = np.exp(-Rb2 / beta)
+            term3 = math.exp(-S2 / c)
+            V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3)
+            # if (background == 'white'):
+            #     V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3) if (l2 >= 0 and l3 >= 0) else 0
+            # elif (background == 'black'):
+            #     V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3) if (l2 <= 0 and l3 <= 0) else 0
+            # else:
+            #     print('Invalid background - choose black or white')
+            #     return 0
+            
+        all_filters.append(V0)
+    
+    output = highest_pixel(all_filters)
+    return np.uint8(output * 255)
+
+def frangi_3D(src, A, B, C, scale_range, background='white'):
+    all_filters = []
+    
+    beta  = 2 * (B**2)
+    c     = 2 * (C**2)
+    alpha = 2 * (A**2)
     for scale in scale_range:
         #print('\nScale: ' + str(scale) + ' started ...')
-        start = time.time()
+        #start = time.time()
         filtered_vol = vesselness_3D(src, scale, alpha, beta, c, background)
         all_filters.append(filtered_vol)
         #print('\nScale: ' + str(scale) + ' finished. \nExecution time: ' + str(time.time() - start))
@@ -599,20 +695,18 @@ def beyond_frangi_filter(src, scale_range, tau, background):
                 l_rho = 0
                 
             # modified vesselness function
-            #V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
+            V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
             if l2 >= (l_rho/2) and l_rho > 0:
                 V0[i, j, k] = 1
             elif l2 <= 0 or l_rho <= 0:
                 V0[i, j, k] = 0
-            else:
-                V0[i, j, k] = (l2**2) * (l_rho - l2) * 27 / ((l2 + l_rho) ** 3)
-                #print(V0[i, j, k])
+            
 
-        all_filters.append(np.uint8(V0 * 255))
+        all_filters.append(V0)
     
     # pick the highest vesselness values
     response = highest_pixel(all_filters)
-    return response
+    return np.uint8(response * 255)
 
 
 
