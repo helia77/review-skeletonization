@@ -7,12 +7,10 @@ Created on Fri Oct 27 10:08:40 2023
 
 import numpy as np
 import math
-import scipy.signal as sc
 import time
 import numpy.linalg as lin
-import cupy as cp
 from scipy.ndimage import filters
-import cthresholding as cp_th
+import thresholding as th
 import metric as mt
 #%%
 # filter the given image based on given scale and returns output image with vesselness values
@@ -349,7 +347,7 @@ def vesselnese_c(values, c):
 
 def highest_pixel(all_filters):
     max_vol = all_filters[0]
-    output_vol = np.zeros(max_vol.shape)
+    output_vol = np.zeros_like(max_vol)
     for x in range(max_vol.shape[2]):
         for y in range(max_vol.shape[1]):
             for z in range(max_vol.shape[0]):
@@ -373,7 +371,7 @@ def process_alpha(A, terms, sample_gr):
     output = highest_pixel(all_filters)             # outputed volume for this alpha value
 
     # apply otsu's threshold
-    thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
+    thresh_volume, best_thresh = th.compute_otsu_img(output,  background='black')
     print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
@@ -392,7 +390,7 @@ def process_beta(B, terms, sample_gr):
     output = highest_pixel(all_filters)
 
     # apply otsu's threshold
-    thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
+    thresh_volume, best_thresh = th.compute_otsu_img(output,  background='black')
     print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
@@ -412,7 +410,7 @@ def process_c(C, terms, sample_gr):
 
     # apply otsu's threshold
     # after Frangi's filter, the background is black
-    thresh_volume, best_thresh = cp_th.compute_otsu_img(output,  background='black')
+    thresh_volume, best_thresh = th.compute_otsu_img(output,  background='black')
     print("\nThresh: ", best_thresh)
     # calculate metrics
     met_otsu = mt.metric(sample_gr, thresh_volume)
@@ -491,9 +489,10 @@ def vesselness_3D(src, scale, alpha, beta, c, background):
 def upgrade_vesselness(src, A, B, C, scale_range, background):
     all_filters = []
     
-    beta  = 2 * (B**2)
-    c     = 2 * (C**2)
-    alpha = 2 * (A**2)
+    alpha = 2 * (A**2) if A != 0 else math.nextafter(0, 1)
+    beta  = 2 * (B**2) if B != 0 else math.nextafter(0, 1)
+    c     = 2 * (C**2) if C != 0 else math.nextafter(0, 1)
+    
     for scale in scale_range:
         # convolving image with Gaussian derivatives - including Hxx, Hxy, Hyy
         Hxx = np.zeros((src.shape[0], src.shape[1], src.shape[2]), dtype=np.float64)
@@ -563,21 +562,14 @@ def upgrade_vesselness(src, A, B, C, scale_range, background):
             if (l2 == 0):
                 l2 = math.nextafter(0,1)
             
-            Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large -> use of float128
+            Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large
             Ra2 = (l2 / l3)**2
             S2 = (l1**2) + (l2**2) + (l3**2)
-            
+                
             term1 = math.exp(-Ra2 / alpha)
             term2 = np.exp(-Rb2 / beta)
             term3 = math.exp(-S2 / c)
             V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3)
-            # if (background == 'white'):
-            #     V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3) if (l2 >= 0 and l3 >= 0) else 0
-            # elif (background == 'black'):
-            #     V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3) if (l2 <= 0 and l3 <= 0) else 0
-            # else:
-            #     print('Invalid background - choose black or white')
-            #     return 0
             
         all_filters.append(V0)
     
@@ -613,7 +605,7 @@ def frangi_3D(src, A, B, C, scale_range, background='white'):
     return np.uint8(output_vol * 255)
 
 
-def beyond_frangi_filter(src, scale_range, tau, background):
+def beyond_frangi_filter(src, tau, scale_range, background):
     
     all_filters = []
     # for each scale
@@ -701,7 +693,6 @@ def beyond_frangi_filter(src, scale_range, tau, background):
             elif l2 <= 0 or l_rho <= 0:
                 V0[i, j, k] = 0
             
-
         all_filters.append(V0)
     
     # pick the highest vesselness values

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import metric as mt
 #%%
 
-def plot_pre_recall(predicted, truth,  marker='', label='', color='b', title='', scatter=False):
+def plot_pre_recall(predicted, truth,  marker='', label='', color='b', title='', background='black', end=False, scatter=False):
     if(np.unique(predicted).size > 1):
         th_range = np.delete(np.unique(predicted), 0)
     else:
@@ -22,7 +22,10 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', title='',
     
     for i, t in enumerate(th_range):
         # global thresholding
-        threshed = (predicted >= t)
+        if background=='black':
+            threshed = (predicted >= t)
+        elif background=='white':
+            threshed = (predicted <= t)
         met = mt.metric(truth, threshed)
 
         precision[i] = met.precision()
@@ -34,13 +37,16 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', title='',
     if(scatter):
         plt.scatter(recall, precision, marker=marker, color=color, label=label)
     else:
-        idxmin = np.argwhere(precision == min(precision))
         plt.plot(recall, precision, marker=marker, color=color, label=label)
-        plt.scatter(recall[idxmin], precision[idxmin], marker='x', c='red')
+        if end:
+            idxmin = np.argwhere(precision == min(precision))
+            plt.scatter(recall[idxmin], precision[idxmin], marker='o', c=color, s=35)
+        
     plt.title(title)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.legend(loc='lower left')
+    if label is None:
+        plt.legend(loc='lower left')
     plt.xlim(-0.02, 1.02)
     plt.ylim(-0.02, 1.02)
     plt.plot()

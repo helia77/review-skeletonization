@@ -8,3 +8,5 @@
 *.tif
 *.h5
 data/
+*.docx
+*.txt

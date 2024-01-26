@@ -9,44 +9,41 @@ NOTE: the cost function for Beyond Frangi is written for KESM data only (backgro
 """
 
 import numpy as np
-import numpy.linalg as lin
-from scipy.ndimage import filters
 import frangi
 from scipy.optimize import minimize
-import matplotlib.pyplot as plt
+import metric as mt
+import thresholding as th
 
+#%%
 volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
 # the cropped sizes can be changed
-sample_vol = volume[300:350, 50:100, 150:200]
-sample_gr = gr_truth[300:350, 50:100, 150:200]
+sample_vol = volume[0:100, 300:400, 300:500]
+sample_gr = gr_truth[0:100, 300:400, 300:500]
 
 def cost_bfrangi(tau, sample_vol, sample_gr):
-    print('tau=', tau)
     
-    scale_range = np.arange(1.5, 4, 0.5)
+    scale_range = [0.9, 1.8, 2.7, 3.6]
     
     # pick the pixels with the highest vesselness value
-    predicted = frangi.beyond_frangi_filter(sample_vol, scale_range, tau, 'white')
+    predicted = frangi.beyond_frangi_filter(sample_vol, tau, scale_range, 'white')
+    thresh, _ = th.compute_otsu_img(predicted, 'black')
+    met = mt.metric(sample_gr, thresh)
+    auc = met.return_auc()
+    print('tau:', tau, '\tAUC:', round(auc, 4))
     
-    #predicted, best_thresh = cp_th.compute_otsu_img(response,  background='black')
-    TP = np.logical_and(sample_gr, predicted).sum()
-    FP = np.logical_and(np.logical_not(sample_gr), predicted).sum()
-    FN = np.logical_and(sample_gr, np.logical_not(predicted)).sum()     
-    
-    dice = (2*TP) / float(2*TP + FP + FN)
-    print('dice= ', dice, '\n')
-    return 1 - dice
+    return 1 - auc
 
 
 ''' Beyond Frangi '''
 
 # Set initial parameter and bounds for Beyond Frangi optimization
-initial_tau = [0.5]
-tau_bound = [(0.4, 5)]
+initial_tau = 0.5
+tau_bound = [(0.1, 5)]
 
 # Run the optimization for Beyond Frangi
-result_b = minimize(cost_bfrangi, initial_tau, arg=(sample_vol, sample_gr), method='Powell', bounds=tau_bound)
+result_b = minimize(cost_bfrangi, initial_tau, args=(sample_vol, sample_gr), method='Powell', bounds=tau_bound)
+np.save(result_b, 'result_cost.npy')
 optimized_tau = result_b.x
 print('Best tau:\t', optimized_tau[0])

@@ -14,13 +14,14 @@ import cthresholding as cp_th
 import plot_curves as pltc
 import sklearn.metrics as sk
 import pandas as pd
+import thresholding as th
 #%%
 # test for 3D volume - KESM
 volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
-sample_vol = volume[300:400, 0:100, 100:200]
-sample_gr = gr_truth[300:400, 0:100, 100:200]
+sample_vol = volume[300:400, 50:100, 100:200]
+sample_gr = gr_truth[300:400, 50:100, 100:200]
 #%%
 ''' preprocess the terms in vesselness function in two situation:
                     1st: calculate the frangi function using two constant parameter and store the third term as without their tuning parameter-
@@ -37,13 +38,13 @@ c = 2 * half_norm * half_norm
 start = time.time()
 
 alpha_terms      = [frg.terms_alpha(sample_vol, s, beta, c) for s in scale]
-alpha_terms_only = [frg.terms_alpha_only(sample_vol, s) for s in scale]
+#alpha_terms_only = [frg.terms_alpha_only(sample_vol, s) for s in scale]
 
 beta_terms       = [frg.terms_beta(sample_vol, s, alpha, c) for s in scale]
-beta_terms_only  = [frg.terms_beta_only(sample_vol, s) for s in scale]
+#beta_terms_only  = [frg.terms_beta_only(sample_vol, s) for s in scale]
 
 c_terms          = [frg.terms_c(sample_vol, s, alpha, beta) for s in scale]
-c_terms_only     = [frg.terms_c_only(sample_vol, s) for s in scale]
+#c_terms_only     = [frg.terms_c_only(sample_vol, s) for s in scale]
 print(f"Calculating terms took {time.time() - start} seconds")
     
 #%%
@@ -57,7 +58,7 @@ c = half_norm
 c_range = [c-27.37, c, c+50.63, 150, 300]#np.linspace(1, 100, 5)
 start = time.time()
 threshs_c       = [frg.process_c(C, c_terms, sample_gr) for C in c_range]
-threshs_c_only  = [frg.process_c(C, c_terms_only, sample_gr) for C in c_range]
+#threshs_c_only  = [frg.process_c(C, c_terms_only, sample_gr) for C in c_range]
 print(f"\nc parameter took {time.time() - start} seconds")
 c_range = np.array(c_range)
 
@@ -67,7 +68,7 @@ b = 0.5
 beta_range = [b/100, b/10, b, b*10, b*100]
 start = time.time()
 threshs_beta        = [frg.process_beta(B, beta_terms, sample_gr) for B in beta_range]
-threshs_beta_only   = [frg.process_beta(B, beta_terms_only, sample_gr) for B in beta_range]
+#threshs_beta_only   = [frg.process_beta(B, beta_terms_only, sample_gr) for B in beta_range]
 print(f"\nbeta parameter: took {time.time() - start} seconds")
 beta_range = np.array(beta_range)
 
@@ -77,7 +78,7 @@ a = 0.5
 alpha_range = [a/100, a/10, a, a*10, a*100]
 start = time.time()
 threshs_alpha       = [frg.process_alpha(A, alpha_terms, sample_gr) for A in alpha_range]
-threshs_alpha_only  = [frg.process_alpha(A, alpha_terms_only, sample_gr) for A in alpha_range]
+#threshs_alpha_only  = [frg.process_alpha(A, alpha_terms_only, sample_gr) for A in alpha_range]
 print(f"\nalpha parameter took {time.time() - start} seconds")
 alpha_range = np.array(alpha_range)
 
@@ -86,41 +87,40 @@ alpha_range = np.array(alpha_range)
         and one terms (only) range. Otsu's point added on the curve                   '''
 
 # calculate the precision-recall point of Otsu's found by applying otsu on volume's slices (otsu_image)
-_, best_thresh = cp_th.compute_otsu_img(sample_vol, 'white')
+what, best_thresh = cp_th.compute_otsu_img(sample_vol, 'white')
 threshed = (sample_vol <= best_thresh)
-met = mt.metric(sample_gr, threshed)
+met = mt.metric(sample_gr, what)
 precision = met.precision()
 recall = met.TPR()
 
 # plot the precision-recall curve for each parameter (both condition:   1st: using all parameters, other two params constant at best value, 
 #                                                                       2nd: replacing the other two terms with 1)
 
-for param in [[threshs_c, threshs_c_only, c_range, 'c'], [threshs_beta, threshs_beta_only, beta_range,'$\\beta$'],
-              [threshs_alpha, threshs_alpha_only, alpha_range, '$\\alpha$']]:
+for param in [[threshs_c, c_range, 'c']]:
     fig, axs = plt.subplots(1, 2, figsize=(12, 5))
     plt.suptitle('Precision-Recall', fontsize=16)
     plt.sca(axs[0])
     plt.grid()
-    title = param[3] + ' + all params'
-    param[2] = np.around(param[2], 3)
-    pltc.plot_pre_recall(param[0][4][0], sample_gr, marker='>', label=f'{param[3]}='+str(param[2][4]), color='#0307bd', title=title)
-    pltc.plot_pre_recall(param[0][3][0], sample_gr, marker='x', label=f'{param[3]}='+str(param[2][3]), color='#3c67d3', title=title)
-    pltc.plot_pre_recall(param[0][2][0], sample_gr, marker=',', label=f'{param[3]}='+str(param[2][2]), color='#80b0ff', title=title)
-    pltc.plot_pre_recall(param[0][1][0], sample_gr, label=f'{param[3]}='+str(param[2][1]), color='#e888cd', title=title)
-    pltc.plot_pre_recall(param[0][0][0], sample_gr, label=f'{param[3]}='+str(param[2][0]), color='#de0000', title=title)
-    plt.scatter(recall, precision, color='g', marker='o', label='Otsu')
+    title = 'all params'
+    #param[2] = np.around(param[2], 3)
+    pltc.plot_pre_recall(param[0][4][0], sample_gr, marker='>', label=str(param[1][4]), color='#0307bd', title=title)
+    pltc.plot_pre_recall(param[0][3][0], sample_gr, marker='x', label=str(param[1][3]), color='#3c67d3', title=title)
+    pltc.plot_pre_recall(param[0][2][0], sample_gr, marker=',', label=str(param[1][2]), color='#80b0ff', title=title)
+    pltc.plot_pre_recall(param[0][1][0], sample_gr, label=str(param[1][1]), color='#e888cd', title=title)
+    pltc.plot_pre_recall(param[0][0][0], sample_gr, label=str(param[1][0]), color='#de0000', title=title)
+    plt.scatter(recall, precision, color='g', marker='x', label='Otsu', s=40)
     plt.legend(loc='lower left')
     
-    plt.sca(axs[1]) 
-    plt.grid()
-    title = param[3] + ' only'
-    pltc.plot_pre_recall(param[1][4][0], sample_gr, marker='>', label=f'{param[3]}='+str(param[2][4]), color='#0307bd', title=title)
-    pltc.plot_pre_recall(param[1][3][0], sample_gr, marker='x', label=f'{param[3]}='+str(param[2][3]), color='#3c67d3', title=title)
-    pltc.plot_pre_recall(param[1][2][0], sample_gr, marker=',', label=f'{param[3]}='+str(param[2][2]), color='#80b0ff', title=title)
-    pltc.plot_pre_recall(param[1][1][0], sample_gr, label=f'{param[3]}='+str(param[2][1]), color='#e888cd', title=title)
-    pltc.plot_pre_recall(param[1][0][0], sample_gr, label=f'{param[3]}='+str(param[2][0]), color='#de0000', title=title)
-    plt.scatter(recall, precision, color='g', marker='o', label='Otsu')
-    plt.legend(loc='lower left')
+    # plt.sca(axs[1]) 
+    # plt.grid()
+    # title = param[3] + ' only'
+    # pltc.plot_pre_recall(param[1][4][0], sample_gr, marker='>', label=f'{param[3]}='+str(param[2][4]), color='#0307bd', title=title)
+    # pltc.plot_pre_recall(param[1][3][0], sample_gr, marker='x', label=f'{param[3]}='+str(param[2][3]), color='#3c67d3', title=title)
+    # pltc.plot_pre_recall(param[1][2][0], sample_gr, marker=',', label=f'{param[3]}='+str(param[2][2]), color='#80b0ff', title=title)
+    # pltc.plot_pre_recall(param[1][1][0], sample_gr, label=f'{param[3]}='+str(param[2][1]), color='#e888cd', title=title)
+    # pltc.plot_pre_recall(param[1][0][0], sample_gr, label=f'{param[3]}='+str(param[2][0]), color='#de0000', title=title)
+    # plt.scatter(recall, precision, color='g', marker='o', label='Otsu')
+    # plt.legend(loc='lower left')
     
 #%%
 # calcualte the Area Under the Curve (AUC) of precision-recall curve for each parameter (refer to titles and their x-axis)

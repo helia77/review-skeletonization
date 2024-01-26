@@ -10,8 +10,8 @@ import math
 #%%
 class metric:
     def __init__(self, true, predicted):
-        # self.vol_true = true
-        # self.vol_pred = predicted
+        self.vol_true = true
+        self.vol_pred = predicted
         self.positives = np.count_nonzero(true)
         self.negatives = np.count_nonzero(np.logical_not(true))
         
@@ -54,3 +54,24 @@ class metric:
     # aka F1 score (harmonic mean of precision and recall)
     def dice(self):
         return (2*self.TP) / float(2*self.TP + self.FP + self.FN)
+    
+    def return_auc(self):
+        if(np.unique(self.vol_pred).size > 1):
+            th_range = np.delete(np.unique(self.vol_pred), 0)
+        else:
+            th_range = np.unique(self.vol_pred)
+        precision   = np.zeros((th_range.size))
+        recall      = np.zeros((th_range.size))
+        for i, t in enumerate(th_range):
+            # global thresholding
+            threshed = (self.vol_pred >= t)
+            met = metric(self.vol_true, threshed)
+            precision[i] = met.precision()
+            recall[i] = met.TPR()
+        
+        indices = np.argsort(recall)
+        sorted_recall = recall[indices]
+        sorted_precision = precision[indices]
+        
+        auc = np.trapz(sorted_precision, sorted_recall)
+        return auc
