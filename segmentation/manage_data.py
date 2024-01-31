@@ -12,6 +12,7 @@ import shutil
 import numpy as np
 import cv2
 import nrrd
+from PIL import Image
 #%%
 
 # given the files path, it loads them all into one numpy array
@@ -27,6 +28,8 @@ def load_images(folder_path, num_img_range, stack=False, grayscale=False, crop_s
         img_range = [0, len(images_list)]
     elif isinstance(num_img_range, int):
         img_range = [0, num_img_range]
+    else:
+        img_range = num_img_range
         
     images = []
     for i in range(img_range[0], img_range[1], 1):
@@ -80,3 +83,30 @@ def numpy_to_obj(vertices, edges, f, offset):
     for e in edges:
         f.write(f"{e+offset} ")
     f.write("\n")
+    
+#%%
+def change_level(folder_path, num_img_range, shadows=0.0, highlights=1.0, stack=False):
+    images_list = [f for f in os.listdir(folder_path) if f.endswith('.bmp') or f.endswith('.jpg') or f.endswith('.tif') or f.endswith('.png')]
+    
+    if num_img_range == 'all':
+        img_range = [0, len(images_list)]
+    elif isinstance(num_img_range, int):
+        img_range = [0, num_img_range]
+    else:
+        img_range = num_img_range
+        
+    images = []
+    for i in range(img_range[0], img_range[1], 1):
+        # load the image with desired type (grayscale or RGB)
+        img = Image.open(os.path.join(folder_path, images_list[i]))
+        # make sure the image is grayscale
+        img_pil = img.convert("L")
+
+        # Apply the point operation to adjust levels
+        img_modified = img_pil.point(lambda x: x * (highlights - shadows) + shadows)
+        images.append(img_modified)
+    
+    if stack:
+        return np.stack(images, axis=0)
+    else:
+        return images
