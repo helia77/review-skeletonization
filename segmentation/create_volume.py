@@ -16,23 +16,25 @@ folder_path = 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/da
 
 img_list = md.load_images(folder_path, num_img_range='all', grayscale=True)
 
+
 #%%
-volume = []
-for img in img_list:
-    volume.append(cv2.convertScaleAbs(img, 1.1, 0.5))
-    
-volume = np.stack(volume, axis=0)
+modified_list = md.change_level(folder_path, num_img_range='all', shadows=0.0, highlights=0.1)
 #%%
-modified_list = md.change_level(folder_path, shadows=0.0, highlights=0.1)
-plt.imshow(modified_list[400], 'gray')
+plt.imshow(modified_list[10], 'gray')
 #plt.imshow(cv2.convertScaleAbs(img, 0.2, 10), 'gray')
 
+#%%
+volume = []
+for img in modified_list:
+    volume.append(img)
+    
+volume = np.stack(volume, axis=0)
 #%%
 # save the volume
 np.save('lsm_raw_410x2801x2001.npy', volume)
 #%%
 # save and check the slices
-#folder_path = 'check'
-#md.save_slices(volume, folder_path, 'all')
+folder_path = 'check'
+md.save_slices(volume, folder_path, 'all')
 
 

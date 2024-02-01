@@ -54,6 +54,8 @@ def save_slices(volume, folder_path, number):
         shutil.rmtree(folder_path)
     os.makedirs(folder_path)
         
+    if number == 'all':
+        number = len(volume)
     for i in range(number):
         cv2.imwrite(os.path.join(folder_path, 'img' + str(i) + '.jpg'), volume[i])
         if i > number:
