@@ -26,15 +26,17 @@ def convolution_3d(input_data, kernel, points):
     for n in range(num_points):
         z, y, x = points[n]
         
-        if z+1<dk and z>0 and y+1<dj and y>0 and x+1<di and x>0:
-            for k in range(3):
-                zk = z + k - 1
+        #if z+1<dk and z>0 and y+1<dj and y>0 and x+1<di and x>0:
+        for k in range(3):
+            zk = z + k - 1
+            if zk < dk and zk >= 0:
                 for j in range(3):
                     yj = y + j - 1
-                    for i in range(3):
-                        xi = x + i - 1
-                        
-                        output[n] += input_data[zk, yj, xi] * kernel[k, j, i]
+                    if yj < dj and yj >= 0:
+                        for i in range(3):
+                            xi = x + i - 1
+                            if xi < di and xi >= 0:        
+                                output[n] += input_data[zk, yj, xi] * kernel[k, j, i]
     return output
 
     
