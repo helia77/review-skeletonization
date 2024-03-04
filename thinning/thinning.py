@@ -12,13 +12,23 @@ import numpy as np
 import functions as func
 import manage_data as md
 import time
+import skimage.morphology as mph
 #%%
 # load binary input
 gr_truth = np.load('C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/segmentation/ground_truth_kesm.npy')
-sample_gr = gr_truth[0:100, 300:400, 300:500]
+sample_gr = gr_truth[0:200, 200:400, 300:500]
 
+#%%
+# ----------------- Lee et al ------------------------- #
+# both methods works the same
+#skelet = mph.skeletonize(sample_gr, method='lee')
+skelet_3d = mph.skeletonize_3d(sample_gr)
+md.numpy_to_nrrd(skelet_3d, 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/thinning/lee.nrrd')
+
+#%%
+# ----------------- Palagyi et al ------------------------- #
 # the indices of black points in the input
-points = sample_gr.nonzero()
+#points = sample_gr.nonzero()
 points_arg = np.argwhere(sample_gr)
 
 binary = np.copy(sample_gr)
@@ -60,8 +70,11 @@ while True:
 
 print('Took ', (time.time() - since), ' seconds')
 #%%
+#md.binary_to_obj(binary, 'binary.obj')
+md.numpy_to_nrrd(binary, 'C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/thinning/palagyi.nrrd')
 
-md.numpy_to_nrrd(binary, 'C:/Users/helioum/Desktop/result.nrrd')
+
+
 
 
        
