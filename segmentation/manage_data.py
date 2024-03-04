@@ -112,3 +112,17 @@ def change_level(folder_path, num_img_range, shadows=0.0, highlights=1.0, stack=
         return np.stack(images, axis=0)
     else:
         return images
+    
+#%%
+def resample_volume(src, interpolator=sitk.sitkLinear, new_spacing = [1, 1, 1]):
+    volume = sitk.GetImageFromArray(src)
+    volume = sitk.Cast(volume, sitk.sitkFloat32)
+    original_spacing = volume.GetSpacing()
+    original_size = volume.GetSize()
+    new_size = [int(round(osz*ospc/nspc)) for osz,ospc,nspc in zip(original_size, original_spacing, new_spacing)]
+    sitk_volume = sitk.Resample(volume, new_size, sitk.Transform(), interpolator,
+                         volume.GetOrigin(), new_spacing, volume.GetDirection(), 0,
+                         volume.GetPixelID())
+    
+    resampled_volume = sitk.GetArrayFromImage(sitk_volume).astype(dtype=np.uint8)
+    return resampled_volume
