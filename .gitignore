@@ -12,4 +12,11 @@ data/
 *.txt
 *.mrk.json
 *.mtl
+*.vtk
 *.obj
+*.dll
+*.exe
+*.cg
+*.off
+*.ini
+PKG-INFO

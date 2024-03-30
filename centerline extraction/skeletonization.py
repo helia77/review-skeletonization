@@ -1,4 +1,82 @@
 # -*- coding: utf-8 -*-
+
+"""
+Algorithms for computing the skeleton of a binary image
+"""
+import os
+import sys
+import time
+import numpy as np
+import subprocess
+import skfmm # pip install scikit-fmm
+import manage_data as md
+import scipy.ndimage.filters as filters
+import scipy.ndimage.morphology as morphology
+
+
+''' -------------------------------------- Kerautret's Method -------------------------------------- '''
+
+'''Based on the code of https://github.com/kerautret/CDCVAM/tree/master
+Paper: Centerline Detection on Partial Mesh Scans by Confidence Vote in Accumulation Map [2016]
+The method is compiled and built using cmake. The exe file is used for skeletonization.
+
+@author: kerautret
+'''
+def skelet_kerautret(exe_path, input_name, output_name, dilateDist=2.0, deltaG=3.0, radius=10.0, threshold=0.5):
+    """
+    Parameters
+    ----------
+    exe_path : string, exe format
+        The path to the execution file of "centerLineGeodesicGraph" function, that would compute
+        the centerline of a tubular mesh.
+    input_name : string, OFF format
+        The path to the input volume, in Object File Format (.OFF)
+    output_name : string, no file type
+        The name that the final centerline will be saved as.
+    dilateDist : float32
+        Dilate distance of the confidence voxels.
+    deltaG : float32
+        The parameter to consider interval of distances.
+    radius : float32
+        The radius used to compute the accumulation.
+    threshold : float32
+        The threshold in the confidence estimation.
+
+    Returns
+    -------
+    skeleton : wavefront .obj file
+        Saves the skeleton of the binary image as .obj file
+        
+    References
+    ----------
+    .. [Kerautret2016] B. Kerautret, A. Krähenbühl, I. Debled-Rennesson and J. -O. Lachaud, 
+    "Centerline detection on partial mesh scans by confidence vote in accumulation map," 2016, 
+    pp. 1376-1381, doi: 10.1109/ICPR.2016.7899829.
+    """
+    
+    # Remove the previous files if exist
+    if os.path.isfile(output_name+'Vertex.sdp'):
+        os.remove(output_name+'Vertex.sdp')
+        os.remove(output_name+'Edges.sdp')
+    command = [
+        exe_path,
+        '-i', input_name,
+        "-o", output_name,
+        "--dilateDist", str(dilateDist),
+        "-g", str(deltaG),
+        "-R", str(radius),
+        "-t", str(threshold)
+    ]
+    # Execute the command
+    subprocess.run(command, check=True)                         # saves three files: Vertex, Edges, and Radius in .SDP format
+    
+    # Convert to .OBJ and save
+    md.sdp2obj(output_name)
+    
+
+
+''' -------------------------------------- Kline's Method -------------------------------------- '''
+
 """
 Based on the code of https://github.com/TLKline/poreture
 The methods work on 3D binary volumes composed of
@@ -10,72 +88,8 @@ Literature references for implemented methods
     kline_pore - [Kline et al. J Porous Mat 2011]
 @author: TLKline
 """
-import os
-import sys
-import time
-import nibabel as nib
-import numpy as np
-import skfmm # pip install scikit-fmm
-import scipy.ndimage.filters as filters
-import scipy.ndimage.morphology as morphology
 
-#%%
-def find_3D_object_voxel_list(vol):
-    """This function creates a centerline from the segmented volume (vol)
-
-    Inputs:
-        Required:
-            vol: 3D binary volume where -
-                0: background
-                1: object to be skeletonized/centerline extracted
-    Returns:
-        nz_x, nz_y, nz_z
-            lists of non-zero x, y, z co-ordinates
-
-    Dependencies:
-        numpy
-    """
-    nz_coords = np.nonzero(vol)
-    nz_x, nz_y, nz_z = [nz_coords[i].tolist() for i in range(3)]
-    return nz_x, nz_y, nz_z
-
-
-def find_terminal_end_points(vol):
-
-    Place_holder = 1
-
-def detect_local_maxima(vol):
-    """
-    Takes a 3D volume and detects the peaks using the local maximum filter.
-    Returns a boolean mask of the peaks (i.e. 1 when
-    the pixel's value is the neighborhood maximum, 0 otherwise)
-    """
-    # define a 26-connected neighborhood
-    neighborhood = morphology.generate_binary_structure(3,3) # first is dimension, next is relative connectivity
-
-    # apply the local maximum filter; all locations of maximum value 
-    # in their neighborhood are set to 1
-    local_max = (filters.maximum_filter(vol, footprint=neighborhood)==vol)
-
-    # Remove background
-    local_max[vol==0] = 0
-
-    # Find endpoint indici
-    [xOrig,yOrig,zOrig] = np.shape(vol)
-    x = []
-    y = []
-    z = []
-    for i in range(0,xOrig):
-        for j in range(0,yOrig):
-            for k in range(0,zOrig):
-                if local_max[i,j,k] > 0:
-                    x.append(i)
-                    y.append(j)
-                    z.append(k)
-
-    return x, y, z
-
-def kline_vessel(vol, startID, **kwargs):
+def skelet_kline(vol, startID, **kwargs):
     """This function creates a centerline from the segmented volume (vol)
 
     Inputs:
@@ -93,11 +107,6 @@ def kline_vessel(vol, startID, **kwargs):
 
     Returns:
         extracted_centerline
-
-    dependencies:
-        numpy
-        scikit-fmm (import name: skfmm)
-        scipy
 
     """
     
@@ -117,7 +126,7 @@ def kline_vessel(vol, startID, **kwargs):
             if key=='min_branch_to_root':
                 mbtr = value
     if 'dmw' not in locals():
-        dmw = 3
+        dmw = 6
     if 'cgw' not in locals():
         cgw = np.sum(vol)/20
     if 'mbl' not in locals():
@@ -261,10 +270,6 @@ def kline_vessel(vol, startID, **kwargs):
                         i = i + ii - 1
                         j = j + jj - 1
                         k = k + kk - 1
-                        
-                        #print ijk, i,j,k, D[i,j,k]
-                        #sys.stdout.flush()
-                        #time.sleep(0.05)
 
                         if D[i,j,k] == 1.e20:
                             done_loop = 1
@@ -294,3 +299,52 @@ def kline_vessel(vol, startID, **kwargs):
     final_march[np.min(x3):np.max(x3)+1, np.min(y3):np.max(y3)+1, np.min(z3):np.max(z3)+1] = weighted_travel_time
 
     return final_centerline, final_march
+
+
+def find_3D_object_voxel_list(vol):
+    """This function creates a centerline from the segmented volume (vol)
+
+    Inputs:
+        Required:
+            vol: 3D binary volume where -
+                0: background
+                1: object to be skeletonized/centerline extracted
+    Returns:
+        nz_x, nz_y, nz_z
+            lists of non-zero x, y, z co-ordinates
+    """
+    nz_coords = np.nonzero(vol)
+    nz_x, nz_y, nz_z = [nz_coords[i].tolist() for i in range(3)]
+    return nz_x, nz_y, nz_z
+
+
+def detect_local_maxima(vol):
+    """
+    Takes a 3D volume and detects the peaks using the local maximum filter.
+    Returns a boolean mask of the peaks (i.e. 1 when
+    the pixel's value is the neighborhood maximum, 0 otherwise)
+    """
+    # define a 26-connected neighborhood
+    neighborhood = morphology.generate_binary_structure(3,3) # first is dimension, next is relative connectivity
+
+    # apply the local maximum filter; all locations of maximum value 
+    # in their neighborhood are set to 1
+    local_max = (filters.maximum_filter(vol, footprint=neighborhood)==vol)
+
+    # Remove background
+    local_max[vol==0] = 0
+
+    # Find endpoint indici
+    [xOrig,yOrig,zOrig] = np.shape(vol)
+    x = []
+    y = []
+    z = []
+    for i in range(0,xOrig):
+        for j in range(0,yOrig):
+            for k in range(0,zOrig):
+                if local_max[i,j,k] > 0:
+                    x.append(i)
+                    y.append(j)
+                    z.append(k)
+
+    return x, y, z
