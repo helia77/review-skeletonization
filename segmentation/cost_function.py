@@ -18,26 +18,25 @@ volume = np.load('whole_volume_kesm.npy')
 gr_truth = np.load('ground_truth_kesm.npy')
 
 # the cropped sizes can be changed
-sample_vol = volume[0:100, 300:400, 300:500]
-sample_gr = gr_truth[0:100, 300:400, 300:500]
+sample_vol = volume[0:200, 200:400, 300:500]
+sample_gr = gr_truth[0:200, 200:400, 300:500]
 
 
 # params = A, B, C
 def cost_frangi(params, sample_vol, sample_gr):
     # test for 3D volume - KESM
     A, B, C = params
+    if A < 0 or B < 0 or C < 0:
+        return 1
     print('a:', round(A, 3), 'b:', round(B, 3), 'c:', round(C, 3), end='\t')
     
-    scale_range = np.arange(1.5, 4, 0.5)
+    scale_range = [0.9, 1.8, 2.7, 3.6]
     
     output = frangi.upgrade_vesselness(sample_vol, A, B, C, scale_range, 'white')
     
-    predicted, _ = th.compute_otsu_img(output,  background='black')
-    TP = np.logical_and(sample_gr, predicted).sum()
-    FP = np.logical_and(np.logical_not(sample_gr), predicted).sum()
-    FN = np.logical_and(sample_gr, np.logical_not(predicted)).sum()     
-    
-    dice = (2*TP) / float(2*TP + FP + FN)
+    predicted, _ = th.compute_otsu_img(output, background='black')
+    met = mt.metric(sample_gr, predicted)
+    dice = met.dice()
     print('\tdice=', round(dice, 4), '\n')
     return 1 - dice
 
@@ -73,7 +72,7 @@ def cost_auc(params, sample_vol, sample_gr):
     
 ''' Normal Frangi '''
 # Initial guess for parameters
-scale = [1.5, 2, 2.5, 3, 3.5]
+scale = [0.9, 1.8, 2.7, 3.6]
 half_norm = frangi.max_norm(sample_vol, scale) / 2
 
 # Set initial parameter and bounds for Beyond Frangi optimization

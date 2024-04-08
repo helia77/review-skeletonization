@@ -116,7 +116,7 @@ def skelet_kline(vol, startID, **kwargs):
     # Set defaults
     if kwargs is not None:
         for key, value in kwargs.items():
-            print ("%s == %s" %(key,value))
+            #print ("%s == %s" %(key,value))
             if key=='dist_map_weight':
                 dmw = value
             if key=='cluster_graph_weight':
@@ -133,8 +133,8 @@ def skelet_kline(vol, startID, **kwargs):
         mbl = 5
     if 'mbtr' not in locals():
         mbtr = 10
-    print ("dmw = %s" %(dmw))
-    print ("cgw = %s" %(cgw))
+    #print ("dmw = %s" %(dmw))
+    #print ("cgw = %s" %(cgw))
 
     # Remember original volume size
     [xOrig, yOrig, zOrig] = np.shape(B2)
@@ -169,16 +169,16 @@ def skelet_kline(vol, startID, **kwargs):
     # Fill in masked values and set to zero
     binary_travel_time = binary_travel_time.filled()
     binary_travel_time[binary_travel_time==1.e20] = 0
-    print ("minimum of binary travel time is %s" % np.min(binary_travel_time))
+    #print ("minimum of binary travel time is %s" % np.min(binary_travel_time))
 
     sys.stdout.flush() 
     time.sleep(1)       
     # Normalize and apply cluster graph weighting (cluster graph weighting doesn't seem to be doing much, perhaps a better FMM implementation???)
     # Find endpoints
     hold_binary_travel_time = binary_travel_time.copy()
-    print ("number of non-zero elements is %s" % (np.sum(B2)))
+    #print ("number of non-zero elements is %s" % (np.sum(B2)))
     [endx, endy, endz] = detect_local_maxima(hold_binary_travel_time)
-    print ("number of local maxima was %s" % (len(endx)))
+    #print ("number of local maxima was %s" % (len(endx)))
 
     sys.stdout.flush() 
     time.sleep(1)       
@@ -189,8 +189,8 @@ def skelet_kline(vol, startID, **kwargs):
     weighted_travel_time = weighted_travel_time.filled()
 
     # Order endpoints by distance from start
-    print ("Min of weighted travel time: %s, max: %s" %(np.min(weighted_travel_time),np.max(weighted_travel_time)))
-    print ("Number of initialized endpoints is %s" % len(endx))
+    #print ("Min of weighted travel time: %s, max: %s" %(np.min(weighted_travel_time),np.max(weighted_travel_time)))
+    #print ("Number of initialized endpoints is %s" % len(endx))
     Euc = []
     for i in range (0,len(endx)):
         Euc.append(np.sqrt((endx[i]-sx)**2 + (endy[i] - sy)**2 + (endz[i] - sz)**2))
@@ -208,7 +208,7 @@ def skelet_kline(vol, startID, **kwargs):
             Y.append(endy[order_indici[i]])
             Z.append(endz[order_indici[i]])
 
-    print ("New root is at x: %s, y: %s, z: %s" %(sx+1,sy+1,sz+1))
+    #print ("New root is at x: %s, y: %s, z: %s" %(sx+1,sy+1,sz+1))
     print ("Number of endpoints after pruning is %s" % len(X))
 
     sys.stdout.flush() 

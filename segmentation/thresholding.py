@@ -40,22 +40,28 @@ def compute_otsu_hist(volume):
     best_thresh = bin_mids[:-1][index_of_max_val]
     return best_thresh
 
-def process_volume(volume, best_thresh, backgr):
-    thresholded_vol = np.zeros(volume.shape)
-    if backgr == 'black':
-        thresholded_vol[volume >= best_thresh] = 1
-    elif backgr == 'white':
-        thresholded_vol[volume <= best_thresh] = 1
-    else:
-        print('Wrong background input. Choose \'white\' or \'black\'.')
-        return 0
+# def process_volume(volume, best_thresh, backgr):
+#     thresholded_vol = np.zeros(volume.shape)
+#     if backgr == 'black':
+#         thresholded_vol[volume >= best_thresh] = 1
+#     elif backgr == 'white':
+#         thresholded_vol[volume <= best_thresh] = 1
+#     else:
+#         print('Wrong background input. Choose \'white\' or \'black\'.')
+#         return 0
 
-    return thresholded_vol
+#     return thresholded_vol
     
 def compute_otsu(volume, background):
     best_threshold = compute_otsu_hist(volume)
-    thresholded_volume = process_volume(volume, best_threshold, backgr=background)
-    return thresholded_volume, best_threshold
+    if background == 'black':
+        threshed_otsu3d = (volume >= best_threshold)
+    elif background == 'white':
+        threshed_otsu3d = (volume <= best_threshold)
+    else:
+        print('Wrong background input. Choose \'white\' or \'black\'.')
+    #thresholded_volume = process_volume(volume, best_threshold, backgr=background)
+    return threshed_otsu3d, best_threshold
 
 # Based on the code from Wikipedia
 # returns a thresholded volume using Otsu's thresholding method
@@ -111,7 +117,6 @@ def otsu_img(volume, background='black'):
     return thresh_volume, best_threshold
     
 def compute_otsu_img(volume, background):
-    
     thresh_img = []
     mean = 0
     for i in range(volume.shape[0]):

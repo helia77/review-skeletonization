@@ -49,13 +49,17 @@ class metric:
         return self.TP / (self.TP + self.FP)
     
     def jaccard(self):
+        if self.positives == 0:
+            return 1
         return self.TP / float(self.TP + self.FP + self.FN)
     
     # aka F1 score (harmonic mean of precision and recall)
     def dice(self):
+        if self.positives == 0:
+            return 1
         return (2*self.TP) / float(2*self.TP + self.FP + self.FN)
     
-    def return_auc(self):
+    def return_auc(self, background):
         if(np.unique(self.vol_pred).size > 1):
             th_range = np.delete(np.unique(self.vol_pred), 0)
         else:
@@ -64,7 +68,12 @@ class metric:
         recall      = np.zeros((th_range.size))
         for i, t in enumerate(th_range):
             # global thresholding
-            threshed = (self.vol_pred >= t)
+            if background == 'black':
+                threshed = (self.vol_pred >= t)
+            elif background == 'white':
+                threshed = (self.vol_pred <= t)
+            else:
+                print('Wrong background input. Choose \'white\' or \'black\'.')
             met = metric(self.vol_true, threshed)
             precision[i] = met.precision()
             recall[i] = met.TPR()

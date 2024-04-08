@@ -41,7 +41,6 @@ def skelet_palagyi(binary_volume):
     """
     # Extract indices vessel points in the input
     points_arg = np.argwhere(binary_volume)
-    
     binary = np.copy(binary_volume)
     deletable = np.load('PK12.npy')
     rotations = rotations12(cube_base())
@@ -67,17 +66,17 @@ def skelet_palagyi(binary_volume):
             keep[border_ids[rem_borders]] = False
             
             iterat += len(rem_points)
-            print(i, '\t-  Deleted points: %d' % (len(rem_points)))
+            #print(i, '\t-  Deleted points: %d' % (len(rem_points)))
         
-        print('Total deletated points:\t', iterat, '\n')
+        #print('Total deletated points:\t', iterat, '\n')
         
         # update foreground
         points_arg = points_arg[keep]
         if iterat == 0:
-            print('No more point removal.')
+            #print('No more point removal.')
             break
 
-        return binary
+    return binary
 
 
 # the 6-Neighborhood excluding center
