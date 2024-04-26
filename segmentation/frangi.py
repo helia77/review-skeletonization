@@ -14,61 +14,65 @@ import thresholding as th
 import metric as mt
 #%%
 # filter the given image based on given scale and returns output image with vesselness values
-def vesselness_2D(src, scale, beta, c):
-
-    s2 = scale * scale
+def vesselness_2D(src, scale, beta, c, normalization):
+    s2 = 1
+    for _ in range(normalization):
+        s2 *= scale
     
     # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
-    D = np.zeros(src.shape[0], src.shape[1], 3)
+    D = np.zeros((src.shape[0], src.shape[1], 3))
     filters.gaussian_filter(src, (scale, scale), (0, 2), D[:, :, 0])            # Dxx
     filters.gaussian_filter(src, (scale, scale), (1, 1), D[:, :, 1])            # Dxy
     filters.gaussian_filter(src, (scale, scale), (2, 0), D[:, :, 2])            # Dyy
     D *= s2                                                                     # for normalization
-
+    
     # eigenvalue calculations from Dxx, Dxy, Dyy and compute the vesselnes function
     output = np.zeros((src.shape))
+    #lambdas = lin.eigvalsh(D)
     
     for x in range(src.shape[0]):
         for y in range(src.shape[1]):
+            
+            #lambda1, lambda2 = sorted(lambdas[x,y], key=abs)
+            
             # ----------- using conventional way (faster) ------------- #
             dxx = D[x, y, 0]
             dxy = D[x, y, 1]
             dyy = D[x, y, 2]
             
-            # calculate eigenvalues
-            tmp = dxx + dyy
-            tmp2 = math.sqrt((dxx - dyy)**2 + 4*(dxy**2))
+            # # calculate eigenvalues
+            # tmp = dxx + dyy
+            # tmp2 = math.sqrt((dxx - dyy)**2 + 4*(dxy**2))
             
-            lambda1 = 0.5 * (tmp + tmp2)
-            l2 = 0.5 * (tmp - tmp2)
+            # lambda1 = 0.5 * (tmp + tmp2)
+            # lambda2 = 0.5 * (tmp - tmp2)
             
-            # making sure they're sorted based on absolute values
-            if (abs(lambda1) < abs(l2)):
-                l2, lambda1 = lambda1, l2
+            # # making sure they're sorted based on absolute values
+            # if (abs(lambda2) < abs(lambda1)):
+            #     lambda2, lambda1 = lambda1, lambda2
             
             # ----------- using numpy linalg eigendecomposition (slower) ------------- #
-            # hess_mat = np.zeros((2,2))
-            # hess_mat[0, 0] = dyy
-            # hess_mat[0, 1] = dxy
-            # hess_mat[1, 0] = dxy
-            # hess_mat[1, 1] = dxx
+            hess_mat = np.zeros((2,2))
+            hess_mat[0, 0] = dyy
+            hess_mat[0, 1] = dxy
+            hess_mat[1, 0] = dxy
+            hess_mat[1, 1] = dxx
             
-            # lam1, lam2 = np.linalg.eigvalsh(hess_mat)
-            # if (abs(lam1) > abs(lam2)):
-            #     lambda1, l2 = lam2, lam1
+            lambda1, lambda2 = sorted(np.linalg.eigvalsh(hess_mat), key=abs)
+            
            
-            if(l2==0):
+            if(lambda2==0):
                 lambda2 = math.nextafter(0, 1)
             
-            Rb = lambda1/lambda2
+            Rb2 = np.float64((lambda1**2)/(lambda2**2))
             S2 = (lambda1**2) + (lambda2**2)
-            term1 = math.exp(-(Rb**2) / beta)
+            term1 = math.exp((-Rb2) / beta)
             term2 = math.exp(-S2 / c)
             
             output[x, y] = term1 * (1.0 - term2) if (lambda2 < 0) else 0
     return output
 
-def frangi_2D(src, B, C, start, stop, step):
+def frangi_2D(src, B, C, start, stop, step, normalization):
     # stores all the filtered images based on different scales
     all_filters = []
     
@@ -76,7 +80,7 @@ def frangi_2D(src, B, C, start, stop, step):
     c    = 2 * (C**2)
     scale_range = np.arange(start, stop, step)
     for scale in scale_range:
-        filtered_img = vesselness_2D(src, scale, beta, c)
+        filtered_img = vesselness_2D(src, scale, beta, c, normalization)
         all_filters.append(filtered_img)
     
     # pick the pixels with the highest vesselness value
@@ -91,7 +95,7 @@ def frangi_2D(src, B, C, start, stop, step):
                     max_value = img[x, y]
             output_img[x, y] = max_value
     
-    return output_img
+    return np.uint8(output_img * 255)
         
 
 def max_norm(src, scale):
