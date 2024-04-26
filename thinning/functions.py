@@ -7,14 +7,15 @@ required function fo Palagyi 12 subiteration skeletonization algorithm
 @author: helioum
 """
 import numpy as np
-import torch
-import torch.nn as nn
 
 # the 6-Neighborhood excluding center
 n6 =  np.array([[[0,0,0],[0,1,0],[0,0,0]],
                 [[0,1,0],[1,0,1],[0,1,0]], 
                 [[0,0,0],[0,1,0],[0,0,0]]]);
 
+
+
+###############################################################################
 
 def convolution_3d(input_data, kernel, points):
     
