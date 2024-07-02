@@ -22,3 +22,5 @@ data/
 *.ini
 PKG-INFO
 *.sdp
+*.mat
+*.ggb

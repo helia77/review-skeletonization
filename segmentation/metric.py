@@ -20,19 +20,16 @@ class metric:
         self.FP = np.logical_and(np.logical_not(true), predicted).sum()
         self.FN = np.logical_and(true, np.logical_not(predicted)).sum()    
         
-        #self.TPR = self.TP / self.positives
-        #self.FPR = self.FP / self.negatives
-        
-        #self.jaccard = self.TP / float(self.TP + self.FP + self.FN)
-        #self.dice = (2*self.TP) / float(2*self.TP + self.FP + self.FN)
-        
     # aka recall, sensitivity
     def TPR(self):
-        sensitivity = self.TP / self.positives
+        sensitivity = self.TP / (self.TP + self.FN)
         return sensitivity
     
     def FPR(self):
         return self.FP / self.negatives
+    
+    def accuracy(self):
+        return (self.TP + self.TN) / (self.positives + self.negatives)
     
     # aka True Negative Rate
     def specificity(self):
@@ -48,15 +45,16 @@ class metric:
             return 0
         return self.TP / (self.TP + self.FP)
     
+    def f_score(self):
+        return self.dice(self)
+    
     def jaccard(self):
         if self.positives == 0:
             return 1
         return self.TP / float(self.TP + self.FP + self.FN)
     
-    # aka F1 score (harmonic mean of precision and recall)
+    # aka Fscore (harmonic mean of precision and recall)
     def dice(self):
-        if self.positives == 0:
-            return 1
         return (2*self.TP) / float(2*self.TP + self.FP + self.FN)
     
     def return_auc(self, background):
