@@ -97,7 +97,6 @@ def frangi_2D(src, B, C, start, stop, step, normalization):
     
     return np.uint8(output_img * 255)
         
-
 def max_norm(src, scale):
     # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
     max_norm_all = 0.0
@@ -124,30 +123,6 @@ def max_norm(src, scale):
     
     return max_norm_all
 
-def eigens(src, scale):
-    # convolving image with Gaussian derivatives - including Dxx, Dxy, Dyy
-    D = np.zeros((src.shape[0], src.shape[1], src.shape[2], 3,3))
-    
-    filters.gaussian_filter(src, (scale, scale, scale), (0, 0, 2), D[:, :, :, 2,2])
-    filters.gaussian_filter(src, (scale, scale, scale), (0, 1, 1), D[:, :, :, 1,2])
-    filters.gaussian_filter(src, (scale, scale, scale), (0, 2, 0), D[:, :, :, 1,1])
-    filters.gaussian_filter(src, (scale, scale, scale), (2, 0, 0), D[:, :, :, 0,0])
-    filters.gaussian_filter(src, (scale, scale, scale), (1, 0, 1), D[:, :, :, 0,2])
-    filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), D[:, :, :, 0,1])
-    
-    D[:, :, :, 2,1] = D[:, :, :, 1,2]
-    D[:, :, :, 1,0] = D[:, :, :, 0,1]
-    D[:, :, :, 2,0] = D[:, :, :, 0,2]
-
-    # normalization
-    s3 = scale * scale * scale
-    D *= s3
-
-    lambdas = lin.eigvalsh(D)
-    #sprint('Eigen Done.')
-    return lambdas
-
-
 def highest_pixel(all_filters):
     max_vol = all_filters[0]
     output_vol = np.zeros_like(max_vol)
@@ -161,7 +136,6 @@ def highest_pixel(all_filters):
                 output_vol[z, y, x] = max_value
     
     return output_vol
-
 
 def vesselness_3D(src, scale, alpha, beta, c, background):
     s2 = scale * scale
@@ -239,11 +213,12 @@ def upgrade_vesselness(src, A, B, C, scale_range, background):
         filters.gaussian_filter(src, (scale, scale, scale), (1, 1, 0), Hzy)
         
         # correct for scaling - normalization
-        s3 = scale * scale
-        Hxx *= s3; Hyy *= s3; Hzz *= s3
-        Hxy *= s3; Hxz *= s3; Hzy *= s3
+        s2 = scale * scale
+        Hxx *= s2; Hyy *= s2; Hzz *= s2
+        Hxy *= s2; Hxz *= s2; Hzy *= s2
         
-        # reduce computation by computing vesselness only where needed
+        # reduce computation by computing vesselness only where is needed
+        # based on the paper of S.-F. Yang and C.-H. Cheng, “Fast computation of Hessian-based enhancement filters for medical images”
         B1 = -(Hxx + Hyy + Hzz)
         B2 = (Hxx * Hyy) + (Hxx * Hzz) + (Hyy * Hzz) - (Hxy * Hxy) - (Hxz * Hxz) - (Hzy * Hzy)
         B3 = (Hxx * Hzy * Hzy) + (Hxy * Hxy * Hzz) + (Hxz * Hyy * Hxz) - (Hxx * Hyy * Hzz) - (Hxy * Hzy * Hxz) - (Hxz * Hxy * Hzy)
@@ -291,19 +266,19 @@ def upgrade_vesselness(src, A, B, C, scale_range, background):
             if (l2 == 0):
                 l2 = math.nextafter(0,1)
             
-            Rb2 = np.float64((l1**2)/(l2 * l3))            # Rb2 tends to get very large
-            Ra2 = (l2 / l3)**2
+            Rb2 = (l1**2)/(l2 * l3)
+            Ra2 = (l2**2) / (l3**2)
             S2 = (l1**2) + (l2**2) + (l3**2)
                 
             term1 = math.exp(-Ra2 / alpha)
-            term2 = np.exp(-Rb2 / beta)
+            term2 = math.exp(-Rb2 / beta)
             term3 = math.exp(-S2 / c)
             V0[i, j, k] = (1.0 - term1) * (term2) * (1.0 - term3)
             
         all_filters.append(V0)
     
     output = highest_pixel(all_filters)
-    return np.uint8(output * 255)
+    return output
 
 def frangi_3D(src, A, B, C, scale_range, background='white'):
     all_filters = []
@@ -353,9 +328,9 @@ def beyond_frangi_filter(src, tau, scale_range, background):
         filters.gaussian_filter(src, (s, s, s), (1, 1, 0), Hzy)
     
         # correct for scaling - normalization
-        s3 = s * s
-        Hxx *= s3; Hyy *= s3; Hzz *= s3
-        Hxy *= s3; Hxz *= s3; Hzy *= s3
+        s2 = s * s
+        Hxx *= s2; Hyy *= s2; Hzz *= s2
+        Hxy *= s2; Hxz *= s2; Hzy *= s2
         
         # reduce computation by computing vesselness only where needed
         B1 = - (Hxx + Hyy + Hzz)
@@ -373,7 +348,6 @@ def beyond_frangi_filter(src, tau, scale_range, background):
             T[(B2 >= 0) & (B3 == 0)] = 0
             T[(B1 < 0) & (B2 < 0) & ((-B1)*(-B2) < (-B3))] = 0
         
-        del B1, B2, B3
         Hxx *= T; Hyy *= T; Hzz *= T
         Hxy *= T; Hxz *= T; Hzy *= T
         
@@ -382,7 +356,6 @@ def beyond_frangi_filter(src, tau, scale_range, background):
         H[:, :, :, 1, 2] = Hxy;     H[:, :, :, 0, 2] = Hxz;     H[:, :, :, 0, 1] = Hzy;
         H[:, :, :, 2, 1] = Hxy;     H[:, :, :, 2, 0] = Hxz;     H[:, :, :, 1, 0] = Hzy;
         
-        del Hxx, Hyy, Hzz, Hxy, Hxz, Hzy
         
         # eigendecomposition
         lambdas = lin.eigvalsh(H)
@@ -424,7 +397,7 @@ def beyond_frangi_filter(src, tau, scale_range, background):
     
     # pick the highest vesselness values
     response = highest_pixel(all_filters)
-    return np.uint8(response * 255)
+    return response
 
 
 
