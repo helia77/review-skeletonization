@@ -25,7 +25,8 @@ def load_images(folder_path, num_img_range, stack=False, grayscale=False, crop_s
     grayscale : if True, it loads all the images as grayscale. Else, loads as 3-channel RGB
     create a list of all image names
     '''
-    images_list = [f for f in os.listdir(folder_path) if f.endswith('.bmp') or f.endswith('.jpg') or f.endswith('.tif') or f.endswith('.png')]
+    images_list = [f for f in os.listdir(folder_path) if f.endswith('.bmp') or
+                   f.endswith('.jpg') or f.endswith('.tif') or f.endswith('.png')]
     if num_img_range == 'all':
         img_range = [0, len(images_list)]
     elif isinstance(num_img_range, int):
@@ -97,7 +98,7 @@ def nrrd2npy(nrrd_path):
 def npy2nrrd(arr, filename):
     nrrd.write(filename, arr)
     
-#%%
+
 def resample(data, spacing, output_spacing):    
     image = sitk.GetImageFromArray(data)
     image = sitk.Cast(image, sitk.sitkFloat32)
@@ -134,14 +135,13 @@ def resample_volume(src, new_spacing = [1, 1, 1]):
 
 #%%
 # convert numpy to OBJ file
-def npy2obj(input_file, output_name):
+def npy2obj(input_file, output_name, level=0.0):
     if isinstance(input_file, str):
         volume = np.load(input_file)
     elif isinstance(input_file, np.ndarray):
         volume = input_file
-        input_file = 'skeleton.sth'
     # marching cubes
-    verts, faces, _, _ = measure.marching_cubes(volume, level=0.0)
+    verts, faces, _, _ = measure.marching_cubes(volume, level=level)
     
     # output_file = input_file.split('.')[0]+'.obj'
     with open(output_name, 'w') as f:
@@ -180,6 +180,7 @@ def cg2obj(input_file):
     modified = content.replace('e', 'l')
     with open(input_file.split('.')[0]+'.obj', 'w') as file:
         file.write(modified)
+        
 #%%
 class vertex:
     def __init__(self, x, y, z, e_out, e_in):
@@ -293,11 +294,12 @@ class NWT:
         for s in vertex_set:                                            #for each OBJ vertex in the vertex set
             vi = obj2nwt[s]                                             #calculate the corresponding NWT index
             self.v.append(vertex(vertices[s-1][0], vertices[s-1][1], vertices[s-1][2], v_out[vi], v_in[vi]))    #create a vertex object, consisting of a position and attached edges
-
+        print('num voxels:', len(self.v))
+    #def __add__(self, other):
     #return a set of line segments connecting all points in the network
     def linesegments(self):
-
         s = []                                                          #create an empty list of line segments
+        #print('num edges:', len(self.e))
         for e in self.e:                                                #for each edge in the graph
             p0 = self.v[e.v[0]].p                                       #load the first point (from the starting vertex)
 
@@ -315,7 +317,9 @@ class NWT:
         ls = self.linesegments()
         print(len(ls))
         pc = []
-        for l in ls:
+        for i, l in enumerate(ls):
+            if i%10000 == 0:
+                print(i//10000)
             pc = pc + l.pointcloud(spacing)
         return pc
     
@@ -332,7 +336,7 @@ class NWT:
 
 
 #%%
-def automatic_brightness_and_contrast(image, clip_hist_percent=1):
+def auto_brightness_contrast(image, clip_hist_percent=1):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Calculate grayscale histogram
     hist = cv2.calcHist([gray],[0],None,[256],[0,256])
