@@ -1,4 +1,6 @@
 /Figs
+/centerline extraction/thinning
+/segmentation/OOF
 *.bmp
 *.npy
 *.jpg
