@@ -101,8 +101,8 @@ def skelet_kline(vol, startID, **kwargs):
     
         Optional (kwargs):
             dist_map_weight
-            cluster_graph_weight
-            min_branch_length
+            #cluster_graph_weight
+            #min_branch_length
             min_branch_to_root
 
     Returns:
@@ -119,18 +119,18 @@ def skelet_kline(vol, startID, **kwargs):
             #print ("%s == %s" %(key,value))
             if key=='dist_map_weight':
                 dmw = value
-            if key=='cluster_graph_weight':
-                cgw = value
-            if key=='min_branch_length':
-                mbl = value
+            # if key=='cluster_graph_weight':
+            #     cgw = value
+            # if key=='min_branch_length':
+            #     mbl = value
             if key=='min_branch_to_root':
                 mbtr = value
     if 'dmw' not in locals():
         dmw = 6
-    if 'cgw' not in locals():
-        cgw = np.sum(vol)/20
-    if 'mbl' not in locals():
-        mbl = 5
+    # if 'cgw' not in locals():
+    #     cgw = np.sum(vol)/20
+    # if 'mbl' not in locals():
+    #     mbl = 5
     if 'mbtr' not in locals():
         mbtr = 10
     #print ("dmw = %s" %(dmw))
@@ -209,7 +209,7 @@ def skelet_kline(vol, startID, **kwargs):
             Z.append(endz[order_indici[i]])
 
     #print ("New root is at x: %s, y: %s, z: %s" %(sx+1,sy+1,sz+1))
-    print ("Number of endpoints after pruning is %s" % len(X))
+    #print ("Number of endpoints after pruning is %s" % len(X))
 
     sys.stdout.flush() 
     time.sleep(1)       
@@ -279,7 +279,7 @@ def skelet_kline(vol, startID, **kwargs):
             
             #
             if ijk % 10 == 0:
-                print (ijk//10, end=" ")
+                print (ijk//10, end=".")
             sys.stdout.flush() 
             time.sleep(1)                 
         else:
