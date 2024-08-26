@@ -22,6 +22,7 @@ import manage_data as md
 import matplotlib.pyplot as plt
 import skeletonization as skelet
 
+#%%
 SAVE = True
 DATA = 'LSM'                     # change the dataset name
 
@@ -105,7 +106,7 @@ for file in [f for f in os.listdir(kline_path[DATA]) if f.startswith('kline')]:
 taglia_all = {}
 taglia_path = {"KESM": 'Data/Tagliasacchi/KESM Output/', "LSM": 'Data/Tagliasacchi/LSM Output/',
                "Micro": 'Data/Tagliasacchi/Micro Output/'}
-files = [centers for centers in os.listdir(taglia_path[DATA]) if centers.endswith('.obj')]
+files = [centers for centers in os.listdir(taglia_path[DATA]) if centers.endswith('unet.obj')]
 for file in files:
     method = (file.split('_')[-1]).split('.')[0]
     print(method)
@@ -120,7 +121,7 @@ for file in files:
 antiga_all = {}
 antiga_path = {"KESM": 'Data/Antiga/obj files/KESM/', "LSM": 'Data/Antiga/obj files/LSM/', "Micro": 'Data/Antiga/obj files/Micro/'}
 
-for file in [f for f in os.listdir(antiga_path[DATA]) if f.endswith('unet.obj')]:
+for file in [f for f in os.listdir(antiga_path[DATA]) if f.startswith('antiga')]:
     method = (file.split('_')[-1]).split('.')[0]
     print(method)
     antiga = md.NWT(antiga_path[DATA] + file)
@@ -149,9 +150,7 @@ else:                                                               # numpy file
 if DATA == 'KESM':    
     GR[:, 0] /= 1023.0
     GR[:, 1:3] /= 511.0
-elif DATA == 'LSM':
-    GR /= 199.0
-elif DATA == 'Micro':
+else:
     GR /= 199.0
 GT_tree = sp.spatial.cKDTree(GR)
 
@@ -198,14 +197,12 @@ plt.title("Ground Truth Network and Metric")
 plt.show()
 
 #%%
-skeletons = [kerautret_all]
-method_names = ['Kerautret']
 
-for skeleton, method in zip(skeletons, method_names):
-    save_path = 'Data/'+ method + '/' + DATA + '_'
-    for name, output in skeleton.items():
-        #name = (name.split('.')[0]).split('_')[1]
-        if isinstance(output, np.ndarray):
-            np.save(save_path + name + '.npy', output)
-        else:
-            output.save_obj(save_path + name + '.obj')
+
+method = 'Palagyi'
+save_path = 'Data/'+ method + '/' + DATA + '_'
+for name, output in palagyi_all.items():
+    if isinstance(output, np.ndarray):
+        np.save(save_path + name + '.npy', output)
+    else:
+        output.save_obj(save_path + name + '.obj')

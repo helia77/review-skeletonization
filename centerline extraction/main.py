@@ -5,25 +5,46 @@ Created on Mon Mar 18 09:02:59 2024
 @author: helioum
 """
 import time
-import thinning
+import sys
 import numpy as np
 import scipy as sp
+sys.path.append("../")
+import thinning as thin
 import manage_data as md
 import matplotlib.pyplot as plt
 import skeletonization as skelet
 
+SAVE = True
+DATA = 'KESM'                     # change the dataset name
+
+# raw dataset
+datasets = {"KESM": 'Data/KESM/sample_vol.npy', "LSM": 'Data/LSM/lsm_brain.npy', "Micro": 'Data/Micro-CT/sample_micro.npy'}
+# segmented datasets directory
+segments = {"KESM": 'segmentation/Data/Segmentations/KESM/', 
+            "LSM": 'segmentation/Data/Segmentations/LSM/', 
+            "Micro": 'segmentation/Data/Segmentations/Micro/'}
+# ground truth of binary segmentation
+ground_seg = {"KESM": 'segmentation/Data/KESM/sample_gr.npy', 
+           "LSM": 'segmentation/Data/LSM/lsm_brain_gr_truth.npy', 
+           "Micro": 'segmentation/Data/Micro/sample_gr_micro.npy'}
+# groung truth of the centerline
+ground_centers = {"KESM": 'Data/ground_kesm.npy', 
+           "LSM": 'Data/SOMETHING.npy', 
+           "Micro": 'Data/Micro/SOMETHING_micro.npy'}
+
 #%%
 # load binary input
-gr_truth = np.load('C:/Users/helioum/Documents/GitHub/review-paper-skeletonization/thinning/ground_truth_kesm.npy')
-sample_gr = gr_truth[0:200, 200:400, 300:500]
+gr_segment = np.load(ground_seg[DATA])
 
+#%%
 # apply all centerline extraction methods
 start = time.time()
-lee = thinning.skelet_lee(sample_gr)                                                # numpy array
+lee = thin.skelet_lee(gr_segment)                                                # numpy array
 print('Lee\'s method took:\t {}'.format((time.time() - start)/60.0))
+
 #%%
 start = time.time()
-palagyi = thinning.skelet_palagyi(sample_gr)                                        # numpy array
+palagyi = thin.skelet_palagyi(gr_segment)                                        # numpy array
 print('Palagyi\'s method took:\t {}'.format((time.time() - start)/60.0))
 
 #%%
@@ -34,22 +55,28 @@ start = time.time()
 #Dilate=1.4625,	DeltaG=3.8105,	radius=2.3025
 skelet.skelet_kerautret(exe_path, input_name, output_name, dilateDist=1.4625, deltaG=3.8105, radius=2.3025, threshold=0.5)
 print('Kerautret\'s method took:\t {}'.format((time.time() - start)/60.0))
-kerautret = md.NWT(output_name+'.obj')                                              # NWT file
+kerautret = md.NWT(output_name+'.obj')                                           # NWT file
+
 #%%
+kline_params = {"KESM": [[95, 76, 35], 19.25, 1518.45, 6, 10.11],
+                "LSM": [], 
+                "Micro": []}
+startID, dist, cgw, mbl, mbr = kline_params[DATA]
+
 start = time.time()
 # Dilate=1.4625,	DeltaG=3.8105,	radius=2.3025
-kline, _ = skelet.skelet_kline(sample_gr, [95, 76, 35], dist_map_weight = 19.25,       # numpy array
-                cluster_graph_weight=1518.45, min_branch_length = 6, min_branch_to_root = 10.11)
+kline, _ = skelet.skelet_kline(gr_segment, startID, dist_map_weight=dist,       # numpy array
+                cluster_graph_weight=cgw, min_branch_length=mbl, min_branch_to_root=mbr)
+
 print('Kline\'s method took:\t {}'.format((time.time() - start)/60.0))
 #%%
-# Tagliasacchi's method (obtained using the software)
+# Tagliasacchi's method (obtained using the implemented software)
 tagliasacchi = md.NWT('Output Data/skeleton_tag.obj')
 antiga = md.NWT('Model_1.obj')
 
 #%%
-skeleton_results = [lee, 'Lee\'s', palagyi, 'Palagyi\'s', kline, 'Kline\'s',
-                    kerautret, 'Kerautret\'s', 
-                    antiga, 'Antiga\'s', tagliasacchi, 'Tagliasacchi\'s']
+skeleton_results = [lee,  palagyi, kline, kerautret, antiga, tagliasacchi]
+skeleton_names = ['Lee\'s', 'Palagyi\'s', 'Kline\'s', 'Kerautret\'s', 'Antiga\'s', 'Tagliasacchi\'s']
 #%%
 # Save them all as different formats for visualization
 for i in range(0, len(skeleton_results), 2):
@@ -74,24 +101,23 @@ GR = np.argwhere(gr_skeleton).astype(np.float32)
 GR[:, 0] /= 1023.0
 GR[:, 1:3] /= 511.0
 GT_tree = sp.spatial.cKDTree(GR)
+
 #%%
-for i in range(0, len(skeleton_results), 2):
-    skeleton = skeleton_results[i]
+for skeleton, name in zip(skeleton_results, skeleton_names):
+    
     print(type(skeleton))
-    name = skeleton_results[i + 1]
-    print('first part done.')
     if isinstance(skeleton, np.ndarray):
         P_T = np.argwhere(skeleton).astype(np.float32)
     else:
         P_T = np.array(skeleton.pointcloud(sigma/subdiv))
-    print('2nd part done.')
+    print('1st part done.')
     if name == 'Tagliasacchi\'s':
         P_T /= 99.0
     else:
         P_T /= 199.0
-    print('3rd part done.')
+    print('2nd part done.')
     T_tree = sp.spatial.cKDTree(P_T)
-    print('4th part done.')
+    print('3rd part done.')
     # Query each KD tree to get the corresponding geometric distances
     [T_dist, _] = GT_tree.query(P_T)
     [GT_dist, _] = T_tree.query(GR)
@@ -106,8 +132,8 @@ for i in range(0, len(skeleton_results), 2):
 
     #calculate the FPR and FPR
     print('\nMethod - ', name)
-    print("FNR = " + str(1 - np.mean(GT_metric)))
-    print("FPR = " + str(1 - np.mean(T_metric)))
+    print("Recall =", np.mean(GT_metric))
+    print("Precision =", np.mean(T_metric))
     
     plt.figure(i/2)
     plt.suptitle(name + ' Method')
