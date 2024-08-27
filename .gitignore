@@ -1,6 +1,8 @@
 /Figs
-/centerline extraction/thinning
+/segmentation/CNN
 /segmentation/OOF
+/centerline extraction/CDCVAM
+/centerline extraction/thinning
 *.bmp
 *.npy
 *.jpg
@@ -12,8 +14,10 @@
 *.h5
 data/
 *.docx
+*.vol
 *.txt
 *.mrk.json
+*.html
 *.mtl
 *.vtk
 *.obj
@@ -26,3 +30,4 @@ PKG-INFO
 *.sdp
 *.mat
 *.ggb
+*.sbatch
