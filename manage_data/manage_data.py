@@ -14,7 +14,7 @@ import shutil
 import struct
 import numpy as np
 import SimpleITK as sitk
-from skimage import measure
+import skimage as ski
 #%%
 
 def load_images(folder_path, num_img_range, stack=False, grayscale=False, crop_size=[0,0], crop_location = [0,0]):
@@ -51,17 +51,27 @@ def load_images(folder_path, num_img_range, stack=False, grayscale=False, crop_s
         return images
 
 # given the volume, saves all the slices as images in a created folder
-def save_slices(volume, folder_path, number):
+def save_slices(volume, folder_path, number, file_format='bmp'):
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
     os.makedirs(folder_path)
         
     if number == 'all':
         number = len(volume)
-    for i in range(number):
-        cv2.imwrite(os.path.join(folder_path, 'img' + str(i) + '.png'), volume[i])
-        if i > number:
-            break
+    for i in range(number - 1):
+        if file_format == 'png':
+            cv2.imwrite(os.path.join(folder_path, 'img' + str(i) + '.png'), volume[i])
+        elif file_format == 'bmp':
+            # get the number of images to save
+            nz = volume.shape[0]
+            digits = len(str(nz))
+    
+            # uint conversion
+            V8 = (volume * 255).astype(np.uint8)
+            for zi in range(nz):
+                filestring = folder_path + 'img_' + str(zi) + ".bmp"
+                ski.io.imsave(filestring, V8[zi, :, :])
+
 
 # convert a binary numpy file (centerlines) to obj file
 # NOT COMPLETED
@@ -141,7 +151,7 @@ def npy2obj(input_file, output_name, level=0.0):
     elif isinstance(input_file, np.ndarray):
         volume = input_file
     # marching cubes
-    verts, faces, _, _ = measure.marching_cubes(volume, level=level)
+    verts, faces, _, _ = ski.measure.marching_cubes(volume, level=level)
     
     # output_file = input_file.split('.')[0]+'.obj'
     with open(output_name, 'w') as f:
@@ -150,6 +160,31 @@ def npy2obj(input_file, output_name, level=0.0):
         for face in faces:
             f.write(f'f {face[0]+1} {face[1]+1} {face[2]+1}\n')
 
+# convert OBJ file to numpy
+def obj2npy(input_file, save=False):
+    if not input_file.endswith('.obj'):
+        print('Unsupported file format.')
+        return None
+    
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        vertices = [tuple(map(int, v.split(' ')[1:])) for v in lines if v.startswith('v')]
+        edges = [e.split(' ')[1:] for e in lines if e.startswith('l')]
+        faces = [face.split(' ')[1:] for face in lines if face.startswith('f')]
+
+    max_dim = np.max(vertices) + 1
+    volume = np.zeros((max_dim, max_dim, max_dim), np.uint8)
+
+    for v in vertices:
+        volume[v] = 1
+    
+    if save:
+        name = input_file[:-4]
+        np.save(name + '.npy', volume)
+    else:
+        return volume
+        
+        
 # convert SDP files (created by skelet_kerautret function) to one OBJ file for visualization 
 def sdp2obj(input_file):
     with open(input_file+'Vertex.sdp', 'r') as inputfile:
