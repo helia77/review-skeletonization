@@ -28,7 +28,7 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', angle=0, 
     elif abs(mitte) < 0.005:
         th_range = np.unique(np.round(predicted, 4))    
     elif abs(mitte) < 0.05:
-        th_range = np.unique(np.round(predicted, 2))
+        th_range = np.unique(np.round(predicted, 3))
     elif abs(mitte) < 0.5:
         th_range = np.unique(np.round(predicted, 3))
     elif abs(mitte) < 1.0:
@@ -64,9 +64,9 @@ def plot_pre_recall(predicted, truth,  marker='', label='', color='b', angle=0, 
         recall = np.delete(recall, -1)
         precision = np.delete(precision, -1)
     if(th_range.size == 1 and th_range[0] == 1):
-        plt.scatter(recall, precision, marker='X', s=280, color=color, label=label, linewidths=2)
+        plt.scatter(recall, precision, marker='X', s=280, color=color, label=label, linewidths=1)
     else:
-        plt.plot(recall, precision, marker=marker, color=color, label=label, linewidth=5)
+        plt.plot(recall, precision, marker=marker, color=color, label=label, linewidth=3)
         #if end:
         #    plt.scatter(recall[0], precision[0], marker=mrk, c=color, s=275, linewidths=1)
 

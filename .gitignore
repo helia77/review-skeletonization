@@ -31,3 +31,5 @@ PKG-INFO
 *.mat
 *.ggb
 *.sbatch
+*.blend
+*.blend1

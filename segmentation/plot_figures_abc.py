@@ -45,7 +45,7 @@ tau_range = np.load('Final npy Data/Figure 3/' + DATA + '/tau_range.npy')
 #%%
 plt.figure(2, figsize=(10,10))
 im = plt.imshow(alphac_fscores, cmap='YlGnBu', vmin=0, vmax=1.05)
-plt.contour(alphac_fscores, levels=[0.45, 0.65, 0.75], linewidths=2.5, colors='black')
+plt.contour(alphac_fscores, levels=[0.45, 0.7, 0.8], linewidths=2.5, colors='black')
 scale = 1.1                            # the scale size for micro plot (due to colorbar size difference)
 # plot colorbar
 if DATA == "Micro":

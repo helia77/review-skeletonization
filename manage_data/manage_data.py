@@ -61,15 +61,14 @@ def save_slices(volume, folder_path, number, file_format='bmp'):
     for i in range(number - 1):
         if file_format == 'png':
             cv2.imwrite(os.path.join(folder_path, 'img' + str(i) + '.png'), volume[i])
-        elif file_format == 'bmp':
-            # get the number of images to save
-            nz = volume.shape[0]
-            digits = len(str(nz))
-    
+        elif file_format == 'bmp':  
             # uint conversion
-            V8 = (volume * 255).astype(np.uint8)
-            for zi in range(nz):
-                filestring = folder_path + 'img_' + str(zi) + ".bmp"
+            if np.max(volume) == 1:
+                V8 = (volume * 255).astype(np.uint8)
+            else:
+                V8 = volume.astype(np.uint8)
+            for zi in range(volume.shape[0]):
+                filestring = folder_path + 'img_' + str(zi) + "d.bmp"
                 ski.io.imsave(filestring, V8[zi, :, :])
 
 
@@ -161,19 +160,19 @@ def npy2obj(input_file, output_name, level=0.0):
             f.write(f'f {face[0]+1} {face[1]+1} {face[2]+1}\n')
 
 # convert OBJ file to numpy
-def obj2npy(input_file, save=False):
+def obj2npy(input_file, dim, save=False):
     if not input_file.endswith('.obj'):
         print('Unsupported file format.')
         return None
     
     with open(input_file, 'r') as f:
         lines = f.readlines()
-        vertices = [tuple(map(int, v.split(' ')[1:])) for v in lines if v.startswith('v')]
+        vertices = [tuple(map(int, map(float, v.split(' ')[1:]))) for v in lines if v.startswith('v')]
         edges = [e.split(' ')[1:] for e in lines if e.startswith('l')]
         faces = [face.split(' ')[1:] for face in lines if face.startswith('f')]
 
-    max_dim = np.max(vertices) + 1
-    volume = np.zeros((max_dim, max_dim, max_dim), np.uint8)
+    # max_dim = np.max(vertices) + 1
+    volume = np.zeros(dim, np.uint8)
 
     for v in vertices:
         volume[v] = 1
